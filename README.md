@@ -24,3 +24,7 @@ pnpm format   # the only command that rewrites files
 
 What is shipped, what is next and why: tickets in Linora, app `DIN`. The `RUNWAY.md` that held
 them was retired on 3 Oct 2026 and its history is in git.
+
+## License
+
+MIT. See `LICENSE`.
