@@ -43,9 +43,17 @@ function run(command: string, args: readonly string[], cwd: string): string {
 
 /**
  * This machine's workflow, not the app: the agents' instructions, the tracker's app key and
- * the hooks that install worktrees. Nothing in the build or the gate reads them.
+ * the hooks that install worktrees, with the script those hooks run. Nothing in the build or
+ * the gate reads them. CLAUDE.md's invariants are not lost with it: they live in
+ * `docs/architecture.md`, which it imports (DIN-18).
  */
-const PRIVATE = ['CLAUDE.md', '.linora-app', '.claude', '.worktreeinclude'];
+const PRIVATE = [
+  'CLAUDE.md',
+  '.linora-app',
+  '.claude',
+  '.worktreeinclude',
+  'scripts/session-start.ts',
+];
 
 const MAP = '.env.public-redactions';
 

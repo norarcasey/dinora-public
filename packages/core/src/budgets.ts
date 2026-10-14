@@ -138,10 +138,6 @@ export function firstDayOf(month: Month): string {
   return `${month}-01`;
 }
 
-export function isMonth(text: string): boolean {
-  return /^\d{4}-(0[1-9]|1[0-2])$/.test(text);
-}
-
 export function shiftMonth(month: Month, by: number): Month {
   const [year = 0, number = 1] = month.split('-').map(Number);
   const index = year * 12 + (number - 1) + by;

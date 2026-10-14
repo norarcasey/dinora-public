@@ -77,20 +77,6 @@ export function byDay(entries: readonly Entry[]): Day[] {
   return days;
 }
 
-/**
- * The entries of the last `days` days, counted back from the newest entry's day rather than the
- * clock's, so a month already over still opens on its last week. `entriesIn` gives them newest
- * first. A category's list is never cut: that is where she goes to fix what is filed there.
- */
-export function lastDays(entries: readonly Entry[], days: number): Entry[] {
-  const newest = entries[0];
-  if (newest === undefined) return [];
-  const from = new Date(Date.parse(`${newest.day}T00:00:00Z`) - (days - 1) * 86_400_000)
-    .toISOString()
-    .slice(0, 10);
-  return entries.filter((entry) => entry.day >= from);
-}
-
 /** "Thu, Sep 24", for a day's heading: the month's page already says the year. */
 export function describeWeekday(isoDate: string, locale: string | undefined): string {
   return new Intl.DateTimeFormat(locale, {

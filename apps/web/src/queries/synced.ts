@@ -15,7 +15,7 @@ import { fetchIncrementally } from './incremental.ts';
  * Defined once per table and listed in `tables.ts`. The rows are kept as PostgREST sends them
  * — snake_case, parsed by `schema` — so what is on disk and what is on the wire are one shape.
  * The table needs `id`, `updated_at` and `deleted_at`, which `owned_table.sql` gives it, and an
- * index on `(user_id, updated_at)` for the changed-since read (see LAYER.md).
+ * index on `(user_id, updated_at)` for the changed-since read.
  */
 export type SyncedTable<Row extends Syncable> = CacheableTable & {
   readonly schema: z.ZodType<Row>;

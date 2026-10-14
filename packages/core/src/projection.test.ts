@@ -8,7 +8,6 @@ import type { NetDay, NetHistory, SidePoint } from './networth.ts';
 import type { SeriesDay } from './projection.ts';
 import {
   addDays as nextDays,
-  describeMonths,
   goalPath,
   isqrt,
   monthsBetween,
@@ -404,16 +403,5 @@ describe('goalPath', () => {
     const none = pathOf(row, [account('sav', 1_400_000)], []);
     if (none.kind !== 'path') throw new Error(none.kind);
     expect(none.past).toEqual([{ on: TODAY, minor: 1_400_000n, kind: 'read' }]);
-  });
-});
-
-describe('describeMonths', () => {
-  it('says months, years, or both', () => {
-    expect(describeMonths(1)).toBe('1 month');
-    expect(describeMonths(5)).toBe('5 months');
-    expect(describeMonths(12)).toBe('1 year');
-    expect(describeMonths(24)).toBe('2 years');
-    expect(describeMonths(38)).toBe('3 years and 2 months');
-    expect(describeMonths(13)).toBe('1 year and 1 month');
   });
 });

@@ -326,14 +326,3 @@ export async function ownCache(client: QueryClient, userId: string | null): Prom
     // is the second lock on the same door.
   }
 }
-
-/** Test helper: module state back to a cold open. */
-export function resetCacheForTests(): void {
-  restored = false;
-  listeners.clear();
-  owner = null;
-  dirty = new Set();
-  written = new Map();
-  clearTimeout(saveTimer);
-  saveTimer = undefined;
-}

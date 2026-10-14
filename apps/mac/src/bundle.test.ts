@@ -4,7 +4,17 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { BAKED_IN, RESOURCES, SWIFT_SOURCES, infoPlist, sourceHash } from './bundle.ts';
+import {
+  BAKED_IN,
+  DEFAULT_HOME,
+  DEFAULT_IDENTIFIER,
+  RESOURCES,
+  SWIFT_SOURCES,
+  identifierChange,
+  identity,
+  infoPlist,
+  sourceHash,
+} from './bundle.ts';
 import type { Digester } from './bundle.ts';
 
 const root = join(import.meta.dirname, '..', '..', '..');
@@ -15,7 +25,14 @@ function digester(): Digester {
   return { update: (chunk) => void hash.update(chunk), hex: () => hash.digest('hex') };
 }
 
-const plan = { root: '/r', sourceHash: 'abc', commit: '1234567', builtAt: '24 Sep', icon: true };
+const plan = {
+  root: '/r',
+  sourceHash: 'abc',
+  commit: '1234567',
+  builtAt: '24 Sep',
+  icon: true,
+  identity: { home: 'https://money.someone.dev/', identifier: 'dev.someone.money' },
+};
 
 describe('what the bundle is built from', () => {
   it('stamps every file in apps/mac/shell and compiles every Swift file it stamps', () => {
@@ -77,6 +94,13 @@ describe('Info.plist', () => {
     for (const path of BAKED_IN) expect(plist).toContain(`<string>${path}</string>`);
   });
 
+  it('carries the identity it was configured with, under the key App.swift reads', () => {
+    const plist = infoPlist(plan);
+    expect(plist).toContain('<key>CFBundleIdentifier</key><string>dev.someone.money</string>');
+    expect(plist).toContain('<key>ShellHome</key><string>https://money.someone.dev/</string>');
+    expect(read('apps/mac/shell/App.swift')).toContain('forInfoDictionaryKey: "ShellHome"');
+  });
+
   it('names an icon only when one was rendered', () => {
     expect(infoPlist(plan)).toContain('CFBundleIconFile');
     expect(infoPlist({ ...plan, icon: false })).not.toContain('CFBundleIconFile');
@@ -111,5 +135,84 @@ describe('the seam between the page and the shell', () => {
     expect([...interpolated].sort()).toEqual(['handle', 'state']);
     // `state` is only ever one of the words `word(_:)` returns, or a literal.
     expect(swift).toMatch(/private static func word\(_ status: UNAuthorizationStatus\) -> String/);
+  });
+});
+
+describe('who the bundle is', () => {
+  const own = {
+    DINORA_MAC_HOME: 'https://money.someone.dev',
+    DINORA_MAC_IDENTIFIER: 'dev.someone.money',
+  };
+
+  it('takes both from the environment, and normalises the URL', () => {
+    expect(identity(own)).toEqual({
+      ok: true,
+      value: { home: 'https://money.someone.dev/', identifier: 'dev.someone.money' },
+    });
+  });
+
+  it('allows plain http on loopback only, as App Transport Security does', () => {
+    expect(identity({ ...own, DINORA_MAC_HOME: 'http://localhost:5173/' }).ok).toBe(true);
+    expect(identity({ ...own, DINORA_MAC_HOME: 'http://money.someone.dev/' })).toMatchObject({
+      ok: false,
+      reason: expect.stringMatching(/https/),
+    });
+    expect(identity({ ...own, DINORA_MAC_HOME: 'ftp://money.someone.dev/' }).ok).toBe(false);
+    expect(identity({ ...own, DINORA_MAC_HOME: 'not a url' })).toMatchObject({
+      ok: false,
+      reason: expect.stringMatching(/not a URL/),
+    });
+  });
+
+  it('refuses the placeholders a public copy carries, naming what to set', () => {
+    // What the export's map puts in place of this deployment's names: a copy nobody
+    // configured must refuse, not open a window onto a host that cannot exist.
+    for (const home of ['https://dinora.example.com/', 'https://example.org/', 'https://a.test/']) {
+      expect(identity({ ...own, DINORA_MAC_HOME: home })).toMatchObject({
+        ok: false,
+        reason: expect.stringMatching(/DINORA_MAC_HOME is a placeholder/),
+      });
+    }
+    expect(identity({ ...own, DINORA_MAC_IDENTIFIER: 'com.example.dinora' })).toMatchObject({
+      ok: false,
+      reason: expect.stringMatching(/DINORA_MAC_IDENTIFIER is a placeholder/),
+    });
+    // Only the reserved names: a real domain that happens to contain the word is fine.
+    expect(identity({ ...own, DINORA_MAC_HOME: 'https://example-money.dev/' }).ok).toBe(true);
+    expect(identity({ ...own, DINORA_MAC_IDENTIFIER: 'com.examples.money' }).ok).toBe(true);
+  });
+
+  it('refuses an identifier that is not reverse-DNS', () => {
+    for (const id of ['money', 'dev.someone money', 'dev..money', 'dev.someone/money']) {
+      expect(identity({ ...own, DINORA_MAC_IDENTIFIER: id })).toMatchObject({
+        ok: false,
+        reason: expect.stringMatching(/reverse-DNS/),
+      });
+    }
+  });
+
+  it('falls back to the defaults when nothing is set', () => {
+    // Compared with the defaults passed by name, not with literals: the export swaps them for
+    // placeholders, and this has to hold in that copy too, where both answers are a refusal.
+    expect(identity({})).toEqual(
+      identity({ DINORA_MAC_HOME: DEFAULT_HOME, DINORA_MAC_IDENTIFIER: DEFAULT_IDENTIFIER }),
+    );
+  });
+});
+
+describe('installing over an existing bundle', () => {
+  it('goes ahead on a first install or the same identifier', () => {
+    expect(identifierChange(null, 'dev.someone.money', false).ok).toBe(true);
+    expect(identifierChange('dev.someone.money', 'dev.someone.money', false).ok).toBe(true);
+  });
+
+  it('refuses a new identifier unless asked, naming the store it would leave behind', () => {
+    const refused = identifierChange('dev.someone.money', 'dev.someone.cash', false);
+    expect(refused).toMatchObject({ ok: false });
+    if (!refused.ok) {
+      expect(refused.reason).toContain('~/Library/WebKit/dev.someone.money');
+      expect(refused.reason).toContain('--new-identifier');
+    }
+    expect(identifierChange('dev.someone.money', 'dev.someone.cash', true).ok).toBe(true);
   });
 });

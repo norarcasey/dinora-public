@@ -8,7 +8,81 @@
  */
 
 export const NAME = 'Dinora';
-export const IDENTIFIER = 'com.example.dinora';
+
+/**
+ * Where the window opens and who the bundle is, read at install rather than written into the
+ * Swift (DIN-16): someone running their own copy sets `DINORA_MAC_HOME` and
+ * `DINORA_MAC_IDENTIFIER` in the root `.env.mac`, or the environment, and edits no code.
+ *
+ * The defaults are this deployment's, so the installed copy on this Mac keeps the identifier
+ * its web data store is filed under. The public export swaps both for reserved `example`
+ * names, which `identity` refuses, so a copy nobody configured says what to set instead of
+ * opening a window onto a host that cannot exist.
+ */
+export const DEFAULT_HOME = 'https://dinora.example.com/';
+export const DEFAULT_IDENTIFIER = 'com.example.dinora';
+
+export type Identity = { readonly home: string; readonly identifier: string };
+
+export type Decided<T> = { ok: true; value: T } | { ok: false; reason: string };
+
+const LOOPBACK = new Set(['localhost', '127.0.0.1', '[::1]']);
+
+/** RFC 2606 reserves these for examples, so a name under one is a placeholder nobody set. */
+const RESERVED = /(^|\.)(example|test|invalid)$|(^|\.)example\.(com|net|org)$/;
+
+export function identity(env: Readonly<Record<string, string | undefined>>): Decided<Identity> {
+  const home = env['DINORA_MAC_HOME'] ?? DEFAULT_HOME;
+  const identifier = env['DINORA_MAC_IDENTIFIER'] ?? DEFAULT_IDENTIFIER;
+  let url: URL;
+  try {
+    url = new URL(home);
+  } catch {
+    return { ok: false, reason: `DINORA_MAC_HOME is not a URL: ${home}` };
+  }
+  // The same rule as the bundle's App Transport Security: plain http only on loopback.
+  if (url.protocol !== 'https:' && !(url.protocol === 'http:' && LOOPBACK.has(url.hostname))) {
+    return { ok: false, reason: `DINORA_MAC_HOME must be https, or http on localhost: ${home}` };
+  }
+  if (RESERVED.test(url.hostname)) {
+    return {
+      ok: false,
+      reason: `DINORA_MAC_HOME is a placeholder (${url.hostname}): set it to where your web app is deployed`,
+    };
+  }
+  // What CFBundleIdentifier allows: reverse-DNS, letters, digits, hyphens and dots.
+  if (!/^[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+$/.test(identifier)) {
+    return { ok: false, reason: `DINORA_MAC_IDENTIFIER is not a reverse-DNS name: ${identifier}` };
+  }
+  if (/^(com|net|org)\.example(\.|$)/.test(identifier)) {
+    return {
+      ok: false,
+      reason: `DINORA_MAC_IDENTIFIER is a placeholder (${identifier}): set it to a reverse-DNS name of your own`,
+    };
+  }
+  return { ok: true, value: { home: url.href, identifier } };
+}
+
+/**
+ * Whether installing over what is there keeps its data. WebKit files the window's store —
+ * the session, the row cache, the service worker — under the bundle identifier, so a new one
+ * starts signed out with nothing cached and leaves the old store behind, unreachable. That is
+ * sometimes wanted, never by accident.
+ */
+export function identifierChange(
+  installed: string | null,
+  wanted: string,
+  allowed: boolean,
+): Decided<null> {
+  if (installed === null || installed === wanted || allowed) return { ok: true, value: null };
+  return {
+    ok: false,
+    reason:
+      `The installed app is ${installed}; this would install ${wanted}. Its session and ` +
+      `cached rows stay in ~/Library/WebKit/${installed}, where the new one cannot read them. ` +
+      'Pass --new-identifier to install it anyway.',
+  };
+}
 
 /**
  * The files whose bytes ARE the app: stamped into it, and the only Swift compiled into it.
@@ -100,6 +174,7 @@ export type BundlePlan = {
   /** Passed in, so this reads no clock. */
   readonly builtAt: string;
   readonly icon: boolean;
+  readonly identity: Identity;
 };
 
 function xml(value: string): string {
@@ -133,13 +208,14 @@ export function infoPlist(plan: BundlePlan): string {
 <dict>
   <key>CFBundleName</key><string>${xml(NAME)}</string>
   <key>CFBundleDisplayName</key><string>${xml(NAME)}</string>
-  <key>CFBundleIdentifier</key><string>${xml(IDENTIFIER)}</string>
+  <key>CFBundleIdentifier</key><string>${xml(plan.identity.identifier)}</string>
   <key>CFBundleExecutable</key><string>${xml(NAME)}</string>
 ${plan.icon ? `  <key>CFBundleIconFile</key><string>${xml(NAME)}</string>\n` : ''}  <key>CFBundlePackageType</key><string>APPL</string>
   <key>CFBundleShortVersionString</key><string>0.1.0</string>
   <key>CFBundleVersion</key><string>1</string>
   <key>LSMinimumSystemVersion</key><string>13.0</string>
   <key>NSHighResolutionCapable</key><true/>
+  <key>ShellHome</key><string>${xml(plan.identity.home)}</string>
   <key>ShellSourceRoot</key><string>${xml(plan.root)}</string>
   <key>ShellSourceHash</key><string>${xml(plan.sourceHash)}</string>
   <key>ShellSourceFiles</key>

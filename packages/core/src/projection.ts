@@ -303,13 +303,3 @@ export function goalPath(
       : null;
   return { kind: 'path', past, finish, lineMinor };
 }
-
-/** "3 years and 2 months", "5 months": how much history a projection rests on, in words. */
-export function describeMonths(months: number): string {
-  const years = Math.floor(months / 12);
-  const rest = months % 12;
-  const part = (n: number, one: string) => `${n} ${n === 1 ? one : `${one}s`}`;
-  if (years === 0) return part(rest, 'month');
-  if (rest === 0) return part(years, 'year');
-  return `${part(years, 'year')} and ${part(rest, 'month')}`;
-}

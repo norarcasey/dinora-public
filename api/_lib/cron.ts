@@ -9,7 +9,7 @@ import { timingSafeEqual } from 'node:crypto';
  *
  * Shared from `api/_lib/` — a path starting with `_` is not deployed as a function — and
  * imported with a `.ts` specifier like everything else, which works in a deployed function
- * only because the root tsconfig sets `rewriteRelativeImportExtensions` (see LAYER.md).
+ * only because the root tsconfig sets `rewriteRelativeImportExtensions`.
  *
  * What the cron itself must be, from Vercel's docs as read on 24 Sep 2026: delivery is
  * best effort — a run can be missed and a run can arrive twice — and a failed run is not

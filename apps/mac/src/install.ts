@@ -5,6 +5,11 @@
  *   pnpm app:check       is the installed bundle what this checkout builds?
  *   pnpm app:uninstall   remove it
  *
+ * Where the window opens and the bundle's identifier come from `DINORA_MAC_HOME` and
+ * `DINORA_MAC_IDENTIFIER`, in the environment or the root `.env.mac` (see `identity` in
+ * `bundle.ts`). An install that would change the identifier refuses without
+ * `--new-identifier`, because the old one's data store is left behind.
+ *
  * Needs the Swift toolchain (Xcode or `xcode-select --install`), so CI never runs it: a macOS
  * runner bills ten times the minutes. `app:check` and the stamp are what replace a CI build.
  *
@@ -43,14 +48,15 @@ import {
   BAKED_IN,
   FRAMEWORKS,
   ICON_SIZES,
-  IDENTIFIER,
   NAME,
   RESOURCES,
   SWIFT_SOURCES,
+  identifierChange,
+  identity,
   infoPlist,
   sourceHash,
 } from './bundle.ts';
-import type { Digester, SourceFile } from './bundle.ts';
+import type { Digester, Identity, SourceFile } from './bundle.ts';
 
 const root = join(import.meta.dirname, '..', '..', '..');
 const installed = join(homedir(), 'Applications', `${NAME}.app`);
@@ -84,14 +90,28 @@ function builtFrom(): string {
   }
 }
 
-function installedHash(): string | null {
+/** A key of the installed bundle's Info.plist: null with no bundle, `unstamped` without the key. */
+function installedKey(key: string): string | null {
   const plist = join(installed, 'Contents', 'Info.plist');
   if (!existsSync(plist)) return null;
   try {
-    return run('/usr/bin/plutil', ['-extract', 'ShellSourceHash', 'raw', '-o', '-', plist]).trim();
+    return run('/usr/bin/plutil', ['-extract', key, 'raw', '-o', '-', plist]).trim();
   } catch {
     return 'unstamped';
   }
+}
+
+/** `.env.mac` first if there is one; a variable already in the environment wins over it. */
+function configured(): Identity {
+  const file = join(root, '.env.mac');
+  if (existsSync(file)) process.loadEnvFile(file);
+  const decided = identity(process.env);
+  if (!decided.ok) {
+    console.error(decided.reason);
+    console.error('Set it in the environment or in .env.mac at the repository root.');
+    process.exit(2);
+  }
+  return decided.value;
 }
 
 function running(): boolean {
@@ -154,7 +174,17 @@ function icon(into: string): boolean {
   return true;
 }
 
-function install(): void {
+function install(newIdentifier: boolean): void {
+  const who = configured();
+  const change = identifierChange(
+    installedKey('CFBundleIdentifier'),
+    who.identifier,
+    newIdentifier,
+  );
+  if (!change.ok) {
+    console.error(change.reason);
+    process.exit(1);
+  }
   try {
     run('swiftc', ['--version']);
   } catch {
@@ -185,7 +215,10 @@ function install(): void {
 
   const builtAt = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
   const plist = join(staging, 'Contents', 'Info.plist');
-  writeFileSync(plist, infoPlist({ root, sourceHash: hash, commit, builtAt, icon: hasIcon }));
+  writeFileSync(
+    plist,
+    infoPlist({ root, sourceHash: hash, commit, builtAt, icon: hasIcon, identity: who }),
+  );
   run('/usr/bin/plutil', ['-lint', plist]);
 
   const wasRunning = running();
@@ -211,7 +244,8 @@ function install(): void {
   }
 
   console.log(`${NAME}.app installed to ${installed}`);
-  console.log(`  ${IDENTIFIER}, built from ${commit}, source ${hash.slice(0, 12)}`);
+  console.log(`  ${who.identifier}, opening ${who.home}`);
+  console.log(`  built from ${commit}, source ${hash.slice(0, 12)}`);
   if (wasRunning) {
     run('open', ['-a', installed]);
     console.log('  it was running, so the old copy was ended and the new one opened');
@@ -224,8 +258,9 @@ function install(): void {
 }
 
 function check(): void {
+  const who = configured();
   const want = sourceHash(sources(), digester());
-  const have = installedHash();
+  const have = installedKey('ShellSourceHash');
   if (have === null) {
     console.log(`No ${NAME}.app in ~/Applications. Run pnpm app:install.`);
     process.exit(1);
@@ -237,18 +272,33 @@ function check(): void {
     console.log('Run pnpm app:install.');
     process.exit(1);
   }
-  console.log(`${NAME}.app is current (${want.slice(0, 12)}).`);
+  // The stamp covers the source, not the configuration it was built with, so those are
+  // compared on their own: a home changed in .env.mac is a stale app with an unchanged hash.
+  for (const [key, value] of [
+    ['ShellHome', who.home],
+    ['CFBundleIdentifier', who.identifier],
+  ] as const) {
+    const built = installedKey(key);
+    if (built !== value) {
+      console.log(`${NAME}.app is STALE: built with ${key} ${String(built)}, configured ${value}.`);
+      console.log('Run pnpm app:install.');
+      process.exit(1);
+    }
+  }
+  console.log(`${NAME}.app is current (${want.slice(0, 12)}, ${who.home}).`);
 }
 
 function uninstall(): void {
+  const identifier = installedKey('CFBundleIdentifier');
   if (running()) run('pkill', ['-f', executable]);
   rmSync(installed, { recursive: true, force: true });
   console.log(`${NAME}.app removed. Its web data (the session, the cache) stays in`);
-  console.log(`~/Library/WebKit/${IDENTIFIER} until that is removed too.`);
+  console.log(`~/Library/WebKit/${identifier ?? '<its identifier>'} until that is removed too.`);
 }
 
 const argv = process.argv.slice(2);
-const unknown = argv.filter((arg) => arg !== '--check' && arg !== '--uninstall');
+const FLAGS = ['--check', '--uninstall', '--new-identifier'];
+const unknown = argv.filter((arg) => !FLAGS.includes(arg));
 if (unknown.length > 0) {
   console.error(`unknown argument: ${unknown.join(' ')}`);
   process.exit(2);
@@ -269,4 +319,4 @@ if (!argv.includes('--check')) {
 }
 if (argv.includes('--uninstall')) uninstall();
 else if (argv.includes('--check')) check();
-else install();
+else install(argv.includes('--new-identifier'));

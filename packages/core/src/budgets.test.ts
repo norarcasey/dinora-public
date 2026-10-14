@@ -23,7 +23,6 @@ import {
   entriesIn,
   firstDayOf,
   guessKind,
-  isMonth,
   lastDayOf,
   makeFiler,
   monthOf,
@@ -208,13 +207,6 @@ describe('months', () => {
     expect(shiftMonth('2026-01', -1)).toBe('2025-12');
     expect(shiftMonth('2026-09', -21)).toBe('2024-12');
     expect(shiftMonth('2026-09', 0)).toBe('2026-09');
-  });
-
-  it('knows a month from text that is not one', () => {
-    expect(isMonth('2026-09')).toBe(true);
-    expect(isMonth('2026-13')).toBe(false);
-    expect(isMonth('2026-9')).toBe(false);
-    expect(isMonth('2026-09-01')).toBe(false);
   });
 
   it('names a month in words', () => {

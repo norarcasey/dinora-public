@@ -17,7 +17,11 @@ enum App {
     /// `open` hands arguments only to a process it starts, and quit it again to come back here: a
     /// later plain `open -a` reopens the window it has. `localhost`, not `127.0.0.1`: Vite listens
     /// on what `localhost` resolves to first, which on this Mac is `[::1]` alone (`SKILL-1`).
-    static let home = "https://dinora.example.com/"
+    ///
+    /// Read from the bundle, where `pnpm app:install` writes `DINORA_MAC_HOME` (DIN-16), so a
+    /// copy deployed somewhere else is pointed at it without editing Swift. Empty when the key
+    /// is missing, which `Shell.target` refuses by name rather than guessing a host.
+    static let home = Bundle.main.object(forInfoDictionaryKey: "ShellHome") as? String ?? ""
 
     /*
       Hosts that stay inside the window, beyond the host of `home`, which always does.

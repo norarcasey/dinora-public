@@ -6,7 +6,6 @@ import {
   describeWeekday,
   findCategories,
   findRules,
-  lastDays,
   nextToSort,
   offersRule,
   recentCategories,
@@ -157,16 +156,6 @@ describe('days', () => {
       ['2026-09-20', ['c']],
     ]);
     expect(byDay([])).toEqual([]);
-  });
-
-  it('keeps the week back from the newest entry, not from today', () => {
-    const entries = [entry('a', '2026-08-31'), entry('b', '2026-08-25'), entry('c', '2026-08-24')];
-    expect(lastDays(entries, 7).map((e) => e.transaction.id)).toEqual(['a', 'b']);
-  });
-
-  it('crosses the start of a month, and is nothing for nothing', () => {
-    expect(lastDays([entry('a', '2026-09-02'), entry('b', '2026-08-27')], 7)).toHaveLength(2);
-    expect(lastDays([], 7)).toEqual([]);
   });
 
   it('names a day with its weekday and without its year', () => {

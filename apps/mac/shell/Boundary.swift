@@ -74,7 +74,7 @@ final class Boundary: NSObject, WKNavigationDelegate, WKUIDelegate {
       whatever the host: a second window here would have no address bar either.
 
       `window.open` returns null to the page. An OAuth popup that writes to the window it
-      opened would need one; the sign-in here is an emailed code (see LAYER.md), so nothing
+      opened would need one; the sign-in here is an emailed code, so nothing
       does.
     */
     func webView(_ web: WKWebView, createWebViewWith configuration: WKWebViewConfiguration,

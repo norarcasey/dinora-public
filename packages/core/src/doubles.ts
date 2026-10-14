@@ -59,8 +59,6 @@ export function doubledAccounts(accounts: readonly AccountRow[]): Double[] {
 /** What the page asks `/api/monarch/join`: Dinora's ids for the two, as the flag has them. */
 export const joinRequestSchema = z.object({ monarch: z.guid(), bank: z.guid() });
 
-export type JoinRequest = z.output<typeof joinRequestSchema>;
-
 /** What `monarch_join` moved and retired: counts, never an amount or a payee (invariant 4). */
 export const joinedSchema = z.object({
   days_moved: z.int(),
