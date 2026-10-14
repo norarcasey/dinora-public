@@ -1,0 +1,7 @@
+{
+  // No DOM in `lib` and no ambient `types`: a browser or Node global used in the core is a
+  // compile error here, before lint ever sees it. The import ban is in eslint.config.js.
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": { "lib": ["ES2023"], "types": [] },
+  "include": ["src/**/*.ts"]
+}

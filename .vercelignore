@@ -1,0 +1,4 @@
+# Every .ts under api/ becomes a deployed function, tests included — measured with
+# `vercel build` when this layer was built (SKL-03): api/x.test.ts came out as
+# functions/api/x.test.func. A file or folder starting with `_` is not a function.
+api/**/*.test.ts

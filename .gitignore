@@ -1,0 +1,16 @@
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+.DS_Store
+
+# Other sessions' checkouts, made by Claude Code (`claude --worktree`, a subagent's worktree).
+# Prettier reads this file, so it also keeps `format:check` out of them.
+.claude/worktrees/
+.vercel/
+apps/mac/build/
+.vercel
+.env*

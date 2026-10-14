@@ -1,0 +1,7 @@
+{
+  "name": "@dinora/mac",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The Mac shell: a native window onto the same apps/web build"
+}

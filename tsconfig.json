@@ -1,0 +1,18 @@
+{
+  // The files that belong to no package: the tool configs at the root, the scripts and the
+  // functions. Without this they are typechecked by nobody, and linted only through a default
+  // project that ignores every flag in the base.
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    // Set here, not only inherited: Vercel's function builder reads this file without
+    // resolving `extends`, and finding no `module` it forces NodeNext and `strict: false`
+    // over the base (@vercel/node 58.9.5, `fixConfig`). NodeNext is what it compiles the
+    // functions with anyway; saying so keeps `strict` (OPS-03).
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ES2023"],
+    "types": ["node"],
+    "rewriteRelativeImportExtensions": true
+  },
+  "include": ["*.ts", "scripts/**/*.ts", "api/**/*.ts"]
+}

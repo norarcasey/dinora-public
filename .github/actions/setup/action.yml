@@ -1,0 +1,20 @@
+name: Set up the workspace
+description: >
+  Node, pnpm and an install. Shared by every job so they cannot drift apart.
+
+runs:
+  using: composite
+  steps:
+    # No `version:` — the action reads `packageManager` from package.json, so the laptop and
+    # the runner are on the same pnpm by construction.
+    - uses: pnpm/action-setup@v4
+
+    # The same file fnm reads on the laptop, so the runner and the laptop match to the patch.
+    - uses: actions/setup-node@v5
+      with:
+        node-version-file: .node-version
+        cache: pnpm
+
+    - name: Install
+      shell: bash
+      run: pnpm install --frozen-lockfile

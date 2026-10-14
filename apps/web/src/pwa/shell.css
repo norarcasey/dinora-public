@@ -1,0 +1,33 @@
+/*
+ * What an installed app needs from the page that a tab does not. Imported once, from main.tsx.
+ */
+
+/*
+ * `viewport-fit=cover` in index.html lets the app draw under the notch and the home
+ * indicator; this keeps the content out from under them.
+ */
+body {
+  margin: 0;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
+    env(safe-area-inset-left);
+}
+
+/*
+ * Below 16px iOS zooms the viewport when a field takes focus, and does not zoom back. The fix
+ * is the size, not `maximum-scale=1`, which also takes pinch-zoom away from people who need it.
+ */
+input,
+textarea,
+select {
+  font-size: max(16px, 1em);
+}
+
+/* See `src/pwa/veil.ts`: hidden while hidden, until the lock decides. Not the switcher's card (SEC-03). */
+html[data-veiled] #root {
+  visibility: hidden;
+}
+
+/* See `src/device/lock.ts`: from the moment it locks, nothing shows but the lock screen. */
+html[data-locked] #root > :not(.lock) {
+  visibility: hidden;
+}

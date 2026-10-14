@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- The mark, concept F of the logo canvas (https://claude.ai/artifact/QuvyxSjWPJ1fkSWp3TaFEq),
+       Nora's pick on 26 Sep 2026: an N whose right-hand stroke is the curve of a euro, crossed by
+       its two bars in saffron. Paths only, no lettering: glyphs rasterise differently on
+       machines with different fonts, and every icon is generated from this file at build. -->
+  <rect width="512" height="512" rx="112" fill="#2341a8"/>
+  <g fill="none" stroke-width="41" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M102.4 409.6V102.4L266.24 409.6C389.12 337.92 389.12 174.08 266.24 102.4" stroke="#eef2f7"/>
+    <path d="M276.48 225.28H419.84M276.48 286.72H419.84" stroke="#f0b93b"/>
+  </g>
+</svg>

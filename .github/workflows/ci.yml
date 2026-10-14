@@ -1,0 +1,106 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    # Concurrency is per job, never for the whole workflow. A second push makes the first
+    # push's gate worthless, so that is cancelled; but a workflow-level group would cancel a
+    # deploy half-way through its upload too, and a half-finished deploy is worse than a
+    # late one. A deploy job takes its own group with `cancel-in-progress: false`.
+    concurrency:
+      group: gate-${{ github.ref }}
+      cancel-in-progress: true
+    # First real run, 24 Sep 2026 on a cold ubuntu-latest runner: the job 42 s — setup 9 s,
+    # `pnpm gate` 22 s (129 tests), build 2 s. Ten minutes is headroom, not a prediction.
+    # Revisit it as the suite grows — a cap that was right in week one and wrong by month
+    # three kills a run, and a killed gate skips the deploy behind it.
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup
+
+      # One command, in the order CI runs it, so `pnpm gate` on a laptop and this job cannot
+      # disagree about what passing means.
+      - run: pnpm gate
+
+      # Not part of `gate` because it is the slowest step and the one least often broken by
+      # an edit; still a break when it stops working.
+      - run: pnpm build
+
+  # The migrations in the repo, applied to a fresh database and held to the invariants. The
+  # check that catches a migration quietly dropping RLS on a table, before anybody pushes it.
+  # `db start` runs the database alone — no auth, API or studio — and applies every
+  # migration and the seed: 12.5 s on an M3 Max with the image cached (SKL-03). First real
+  # run, 24 Sep 2026 on a cold runner: `db start` 42 s with the image pull, the job 63 s.
+  schema:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup
+      - run: pnpm exec supabase db start
+      - run: pnpm db:verify
+
+  # The only path to production: `git.deploymentEnabled.main` is false in vercel.json, so
+  # Vercel's own git integration never ships main — CruciNora once went out 33 s ahead of
+  # its gated deploy that way. A skipped gate or schema job skips this too.
+  #
+  # Migrations are NOT applied here. They are pushed by hand, `pnpm db:push`, because
+  # applying schema as a side effect of a green build is how an irreversible one lands
+  # unnoticed. What this job does instead is refuse to ship ahead of them, and refuse to ship
+  # into a project anybody can sign up to — both asked with the public key, no credential.
+  deploy:
+    needs: [gate, schema]
+    # Off until the repository variable ENABLE_VERCEL_DEPLOY is 'true', which is set once the
+    # secrets below exist (docs/vercel.md). Until then the job is skipped and CI stays green
+    # — and Noradar reports the deploy as skipped, which is the truth, rather than a red run that is not.
+    if: >-
+      github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+      vars.ENABLE_VERCEL_DEPLOY == 'true'
+    runs-on: ubuntu-latest
+    environment: production
+    # Its own group, never cancelled: a second push waits for this upload to finish rather
+    # than killing it half-way.
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    timeout-minutes: 15
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      # Public values, baked into the bundle at build time. Set here as process env rather
+      # than pulled from Vercel: `vercel pull` writes a variable marked sensitive as the
+      # literal string "[SENSITIVE]", which once shipped a Nora Bene bundle that could not
+      # reach its database. Unset, the first check below fails — so an empty secret cannot
+      # build a bundle that points nowhere.
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup
+
+      # First, so a build that cannot legally ship costs nothing to find out about. Both
+      # fail closed: a project that cannot be reached is one whose answer is unknown.
+      - run: pnpm db:deployed
+      - run: pnpm auth:closed
+
+      # Pinned with the rest of the toolchain rather than `@latest`, so a CLI release cannot
+      # change what a deploy does between two pushes. 58.9.5 is what `vercel build` was
+      # measured with (SKL-03).
+      - run: pnpm add -g vercel@58.9.5
+      - run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+      # Vercel typechecks every function again, its own way, and by default prints what it
+      # finds and ships anyway: from BANK-02 to OPS-03 every deploy carried 21 such errors on
+      # a green run, all false, so a real one would have gone out unseen. This makes them
+      # refuse the deploy. The gate's typecheck stays the one that says why.
+      - run: vercel build --prod --token="$VERCEL_TOKEN"
+        env:
+          EXPERIMENTAL_NODE_TYPESCRIPT_ERRORS: '1'
+      - run: vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"

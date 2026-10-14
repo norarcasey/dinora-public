@@ -1,0 +1,101 @@
+project_id = "dinora"
+
+# LOCAL DEVELOPMENT ONLY.
+#
+# Never run `supabase config push`. It overwrites the linked project's auth settings with
+# the values below — production's Site URL becomes 127.0.0.1 and every sign-in email
+# breaks. Production auth lives in the dashboard; docs/supabase.md says what to set there.
+#
+# Only the settings that are decisions are here. Everything else is the CLI's default,
+# which is what `supabase init` would have written out at length.
+
+# This app's own port block, 540xx. Other apps' local stacks run beside it —
+# on the laptop this layer was built on, 543xx (the CLI default) belonged to noratives and
+# 544xx to Nora Bene, and a second stack on the default ports fails to start with "port is
+# already allocated". The block is the whole hundred: this checkout uses the x2x tens, and each
+# worktree runs a stack of its own in another tens digit of the same block, set through the
+# CLI's environment overrides by scripts/db/stack.ts. That is why every `db:*` script goes
+# through scripts/db/supabase.ts rather than calling `supabase` directly.
+
+[api]
+enabled = true
+port = 54021
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54022
+shadow_port = 54020
+major_version = 17
+
+[db.pooler]
+enabled = false
+port = 54029
+
+[db.seed]
+enabled = true
+sql_paths = ["./seed.sql"]
+
+# The client is auth-js plus postgrest-js and nothing else (see apps/web/src/supabase), so
+# a local realtime, storage, log pipeline or edge runtime is a container that nothing
+# calls. Turn one on here in the same commit as the code that first needs it.
+[realtime]
+enabled = false
+
+[storage]
+enabled = false
+
+[analytics]
+enabled = false
+port = 54027
+
+[edge_runtime]
+enabled = false
+
+[studio]
+enabled = true
+port = 54023
+
+# Catches sign-in email locally, so a test run never mails a real address.
+[local_smtp]
+enabled = true
+port = 54024
+
+[auth]
+enabled = true
+site_url = "http://localhost:5173"
+additional_redirect_urls = ["http://localhost:5173", "http://127.0.0.1:5173"]
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+refresh_token_reuse_interval = 10
+# Closed, the posture production must have, and which the deploy refuses to ship without
+# (`pnpm auth:closed`). Accounts are created on purpose — an invite or the dashboard —
+# through the admin API, which this switch does not gate.
+enable_signup = false
+
+[auth.email]
+# NOT the same switch, and turning this one off is a lockout. Measured by Nora Bene against
+# this same GoTrue on 19 Sep 2026: false here fails every email sign-in, for everybody,
+# with `email_provider_disabled`. The provider stays on; only signup above is off.
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = false
+
+# The sign-in email leads with a code. An installed PWA and a Mac app's web view each keep
+# their own storage, and a link opens in the browser — signing in the browser, not the app.
+# Production carries the same template; docs/supabase.md says where to paste it.
+[auth.email.template.magic_link]
+subject = "Your Dinora sign-in code"
+content_path = "./supabase/templates/magic_link.html"
+
+# Face ID (SEC-01): a passkey signs in without the email at all. The relying party is the
+# host the page is served from — a passkey made on localhost works only there, and one made on
+# production only there, which is why changing the domain (OPS-02) means adding it again.
+[auth.passkey]
+enabled = true
+
+[auth.webauthn]
+rp_display_name = "Dinora"
+rp_id = "localhost"
+rp_origins = ["http://localhost:5173"]

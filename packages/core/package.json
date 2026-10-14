@@ -1,0 +1,43 @@
+{
+  "name": "@dinora/core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./activity": "./src/activity.ts",
+    "./assets": "./src/assets.ts",
+    "./balances": "./src/balances.ts",
+    "./bridge": "./src/bridge.ts",
+    "./calendar": "./src/calendar.ts",
+    "./budgets": "./src/budgets.ts",
+    "./contributions": "./src/contributions.ts",
+    "./crypto": "./src/crypto.ts",
+    "./doubles": "./src/doubles.ts",
+    "./due": "./src/due.ts",
+    "./estimates": "./src/estimates.ts",
+    "./goals": "./src/goals.ts",
+    "./jump": "./src/jump.ts",
+    "./groups": "./src/groups.ts",
+    "./history": "./src/history.ts",
+    "./lock": "./src/lock.ts",
+    "./metals": "./src/metals.ts",
+    "./monarch": "./src/monarch.ts",
+    "./money": "./src/money.ts",
+    "./networth": "./src/networth.ts",
+    "./pace": "./src/pace.ts",
+    "./parse": "./src/parse.ts",
+    "./plaid": "./src/plaid.ts",
+    "./projection": "./src/projection.ts",
+    "./rates": "./src/rates.ts",
+    "./reading": "./src/reading.ts",
+    "./signing-in": "./src/signing-in.ts",
+    "./simplefin": "./src/simplefin.ts",
+    "./sorting": "./src/sorting.ts",
+    "./sync": "./src/sync.ts",
+    "./terms": "./src/terms.ts",
+    "./transfers": "./src/transfers.ts"
+  },
+  "dependencies": {
+    "zod": "^4.6.5"
+  }
+}

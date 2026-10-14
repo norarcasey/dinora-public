@@ -1,0 +1,7 @@
+pnpm-lock.yaml
+dist/
+coverage/
+.vercel/
+# Written by `supabase link`. Git ignores it through supabase/.gitignore, which Prettier does
+# not read, so a linked checkout failed the gate (24 Sep) while CI, never linked, passed.
+supabase/.temp/

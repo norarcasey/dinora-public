@@ -1,0 +1,5 @@
+# Written by the CLI: the linked project ref and branch state. Local to this checkout.
+.branches
+.temp
+# Which port slot this worktree's own stack took (scripts/db/stack.ts). Only in a worktree.
+.worktree

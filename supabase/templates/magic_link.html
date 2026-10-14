@@ -1,0 +1,34 @@
+<!--
+  Sign-in email. The code comes first on purpose.
+
+  An installed PWA and a Mac app's web view each keep storage of their own, and a link in an
+  email opens in the default browser — so following it signs in the browser and leaves the
+  app signed out. Typing the code into the app puts the session where the app can read it.
+  Nora Bene learned this on iOS, where it looked like the app forgot you on every open.
+
+  The link stays below for a desktop browser, where it works.
+-->
+<div style="font-family: system-ui, sans-serif; padding: 32px 24px; max-width: 480px">
+  <p style="font-size: 20px; margin: 0 0 24px">Dinora</p>
+
+  <p style="margin: 0 0 10px">Your sign-in code:</p>
+  <p
+    style="
+      font-family: ui-monospace, Menlo, monospace;
+      font-size: 32px;
+      letter-spacing: 0.16em;
+      font-weight: 600;
+      margin: 0 0 10px;
+    "
+  >
+    {{ .Token }}
+  </p>
+  <p style="margin: 0 0 24px; font-size: 13px">
+    Type this into the app. It expires shortly and works once.
+  </p>
+
+  <p style="margin: 0; font-size: 13px">
+    On a computer you can <a href="{{ .ConfirmationURL }}">use this link instead</a>. In an
+    installed app, use the code.
+  </p>
+</div>

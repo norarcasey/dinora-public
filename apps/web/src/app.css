@@ -1,0 +1,2823 @@
+/* Azulejo (UI-06, Nora's pick of three on 26 Sep, from the design audit): cobalt and saffron on
+   porcelain. Cobalt sits near the cash series' blue, so the accent stays off anything that
+   could be read as cash. Saffron is the brand's alone, and at 2.0:1 on the light --bg it is
+   never text that has to be read. */
+:root {
+  color-scheme: light dark;
+  --bg: #eef2f7;
+  --surface: #ffffff;
+  --line: #d8dfe9;
+  --ink: #111b2e;
+  --muted: #56617a;
+  --accent: #2341a8;
+  --accent-ink: #ffffff;
+  --saffron: #e2a11b;
+  /* What a state means, apart from the brand and the chart. One red used to mean stale, over
+     budget and failed; stale is a warning now, and wears a clock besides. Every one is past
+     4.5:1 on --bg and --surface, light and dark (26 Sep). */
+  --good: #15784a;
+  --warning: #a15c07;
+  --critical: #b42318;
+  /* The net-worth line takes the accent: it is the sum, not a side, and it is drawn alone.
+     Over the stacked columns, where cash is beside it, it is ink (`.net-overlay`). Cobalt is
+     7.8:1 on --bg and 7.3:1 on the dark --surface. */
+  --series: var(--accent);
+  /* For the hero numbers and the titles: self-hosted, so the service worker precaches it
+     with the shell. One weight, the latin subset, 21 KB. */
+  --display: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+  /* Cash, investments and debt, apart or stacked: the dataviz reference palette's first three
+     slots, validated all-pairs on --surface (24 Sep): worst CVD ΔE 9.2, normal-vision 24.0.
+     Investments' aqua is 2.77:1 on the light surface, so the chart keeps its key and table. */
+  --cash: #2a78d6;
+  --investments: #1baf7a;
+  --debt: #eb6834;
+  /* Property (ACCT-06): the reference palette's violet, slot 7. Slot 4's yellow sits 13.7 from
+     debt's orange for full colour vision (a FAIL under 15), and magenta 12.9. Violet passes
+     all four all-pairs on --surface (25 Sep): worst CVD ΔE 9.2, normal-vision 16.3. */
+  --property: #4a3aa7;
+  font:
+    16px/1.5 -apple-system,
+    BlinkMacSystemFont,
+    system-ui,
+    'Segoe UI',
+    sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0b1120;
+    --surface: #151d2e;
+    --line: #26324a;
+    --ink: #e6ebf5;
+    --muted: #95a1b8;
+    --accent: #8ea6ff;
+    --accent-ink: #0b1120;
+    --saffron: #f0b93b;
+    --good: #4cc38a;
+    --warning: #e3b341;
+    --critical: #f47067;
+    /* The same three stepped for the dark surface: worst CVD ΔE 9.4, every one past 3:1. */
+    --cash: #3987e5;
+    --investments: #199e70;
+    --debt: #d95926;
+    /* No violet passes all-pairs with the dark blue (#9085e9: CVD ΔE 1.9). #6a5acd passes the
+       stack's adjacent pairs, worst 19.6, and is 11.8 from cash, which never touches it: the
+       stack puts investments between them, and the key and table name every series. */
+    --property: #6a5acd;
+  }
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+}
+
+.page {
+  box-sizing: border-box;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 32px 16px;
+}
+
+.page.narrow {
+  max-width: 400px;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+h1 {
+  margin: 0;
+  font-size: 32px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* The display face, for the hero numbers and the titles only: everything read at body size,
+   forms included, stays in the system face. */
+:is(h1, .details h2, .hero-value, .total) {
+  font-family: var(--display);
+  font-weight: 600;
+}
+
+/* The one mark of saffron: the "o" of the name. */
+.brand-o {
+  color: var(--saffron);
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 8px 24px;
+  margin-bottom: 16px;
+}
+
+/* A name, not a headline: at 32px it and the email took the top of every screen (UI-04). */
+h1.brand {
+  font-size: 20px;
+}
+
+.bar .account {
+  margin-left: auto;
+}
+
+/* ⌘K (UI-10). Hidden on a phone, which has Activity's search a tab away and no key to press;
+   still there to be pressed on an iPad with a keyboard. */
+.bar .jump {
+  display: none;
+  gap: 8px;
+  margin-left: auto;
+  text-decoration: none;
+}
+
+.bar .jump + .account {
+  margin-left: 0;
+}
+
+/* Banks that stopped updating (BANK-18): one amber mark and a count, only while there are
+   any, ahead of the jump and the account. Amber and a triangle, so it never rests on colour
+   alone; the count is its text, the drawer says the rest. */
+.bar .not-updated {
+  gap: 4px;
+  margin-left: auto;
+  color: var(--warning);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.bar .not-updated svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.25;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.bar .not-updated ~ :is(.jump, .account) {
+  margin-left: 0;
+}
+
+/* The drawer: one section per source, its banks each with its accounts under it. */
+.stale-source + .stale-source {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.stale-source > p {
+  margin: 0 0 8px;
+}
+
+.stale-banks {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stale-banks > li + li {
+  margin-top: 12px;
+}
+
+.stale-banks .warned {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stale-banks .warned a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--ink);
+}
+
+kbd {
+  padding: 1px 6px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font: inherit;
+  font-size: 13px;
+}
+
+@media (min-width: 720px) {
+  .bar .jump {
+    display: inline-flex;
+  }
+}
+
+/* ─── the tabs (UI-04) ─── */
+
+/* A phone's are along the bottom, in reach of a thumb, clear of the home indicator. */
+.tabs {
+  position: fixed;
+  inset: auto 0 0;
+  z-index: 2;
+  display: flex;
+  padding: 0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.tabs a {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 56px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+/* Heavier as well as coloured, so the tab she is on never rests on colour alone. */
+.tabs a[aria-current='page'] {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.tabs a[aria-current='page'] svg {
+  stroke-width: 2.5;
+}
+
+.tabs svg {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* The page scrolls clear of them: the tabs' 57px and a gap. The body already pads for the
+   home indicator (`pwa/shell.css`). */
+.page:has(> .bar .tabs) {
+  padding-bottom: 89px;
+}
+
+/* Anything wider, the Mac window included, has them across the header beside the name. */
+@media (min-width: 720px) {
+  .tabs {
+    position: static;
+    gap: 4px;
+    padding: 0;
+    border: 0;
+    background: none;
+  }
+
+  .tabs a {
+    flex: none;
+    flex-direction: row;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 12px;
+    border-radius: 10px;
+    font-size: 16px;
+  }
+
+  .tabs a:hover {
+    color: var(--ink);
+  }
+
+  .tabs a[aria-current='page'] {
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+  }
+
+  .tabs svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .page:has(> .bar .tabs) {
+    padding-bottom: 32px;
+  }
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+/* ─── the controls (UI-02) ─── */
+
+/* One size for every control. The design audit (26 Sep) measured four sizes of select and
+   inputs from 30px to 46px tall; 44px is the smallest a thumb hits reliably. */
+input,
+select {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+}
+
+input[type='checkbox'],
+input[type='radio'] {
+  width: auto;
+  min-height: 0;
+}
+
+input.code {
+  text-align: center;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 24px;
+  letter-spacing: 0.3em;
+}
+
+:is(input, select, button, summary):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 13rem), 1fr));
+  gap: 16px;
+  margin: 12px 0 20px;
+}
+
+/* A name, an address, a set of boxes or a choice reads across the row; a date or an amount
+   does not need to. */
+.fields > :is(.wide, .checklist, .segmented, p) {
+  grid-column: 1 / -1;
+}
+
+.fields > p {
+  margin: 0;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+:is(.field > label, .segmented legend, .checklist legend) {
+  padding: 0;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* The box draws the border, so a unit sits inside it beside the number. */
+.control-box {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.control-box:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.control-box > :is(input, select) {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+}
+
+.control-box > :is(input, select):focus-visible {
+  outline: 0;
+}
+
+.affix {
+  flex: none;
+  padding: 0 12px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.affix + input {
+  padding-left: 0;
+}
+
+.control-box > input:has(+ .affix) {
+  padding-right: 0;
+}
+
+.field.invalid .control-box,
+.checklist.invalid {
+  border-color: var(--critical);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--critical) 15%, transparent);
+}
+
+.checklist.invalid {
+  padding: 4px 12px;
+  border: 1px solid var(--critical);
+  border-radius: 10px;
+}
+
+:is(.hint, .field-error) {
+  margin: 0;
+  font-size: 13px;
+}
+
+.hint {
+  color: var(--muted);
+}
+
+.field-error {
+  color: var(--critical);
+}
+
+/* A handful of choices, all on show. */
+.segmented {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.segmented legend {
+  margin-bottom: 6px;
+}
+
+/* Equal columns, as wide as the longest option needs and no wider: stretched across a desktop
+   form, "Home" was a bar 220px long. On a phone the row keeps to one line and a long option
+   wraps inside its segment; wrapping the segments put "Promo" alone on a second row (26 Sep). */
+.segments {
+  display: grid;
+  grid-auto-columns: 1fr;
+  grid-auto-flow: column;
+  gap: 4px;
+  box-sizing: border-box;
+  width: fit-content;
+  max-width: 100%;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.segments label {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 40px;
+  padding: 4px 14px;
+  line-height: 1.2;
+  border-radius: 9px;
+  color: var(--muted);
+  font-size: 15px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.segments label:has(input:checked) {
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+
+.segments label:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.segmented:disabled .segments {
+  opacity: 0.6;
+}
+
+/* Hidden but focusable, and held inside its label, as the chart's views are. */
+.segments input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.checklist {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.checklist legend {
+  margin-bottom: 2px;
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+.check input {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+/* The bank under the account, not run on after it ("Online Savings Ally Bank", 26 Sep). */
+.check-detail {
+  display: block;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* Primary, secondary, destructive and quiet: four, each at least 44px tall. */
+button {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+button.secondary {
+  border-color: var(--line);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+button.danger {
+  background: var(--critical);
+  color: var(--surface);
+}
+
+/* A link's look with a thumb's reach: the text stays small, the target does not. */
+button.quiet {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font-weight: 400;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+button.quiet.danger {
+  color: var(--critical);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+}
+
+.actions .form-error {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 14px;
+}
+
+.saved {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.saved::before {
+  content: '✓ ';
+  color: var(--good);
+}
+
+/* ─── the sheet (UI-03) ─── */
+
+/* From the bottom on a phone, where the thumb is; from the side on the Mac, where the page
+   stays in view beside it. */
+dialog.sheet {
+  box-sizing: border-box;
+  position: fixed;
+  inset: auto 0 0;
+  width: 100%;
+  max-width: 100%;
+  max-height: 92dvh;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  border: 0;
+  border-radius: 16px 16px 0 0;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 -12px 40px rgb(0 0 0 / 0.2);
+  overscroll-behavior: contain;
+}
+
+dialog.sheet::backdrop {
+  background: rgb(0 0 0 / 0.35);
+}
+
+@media (min-width: 720px) {
+  dialog.sheet {
+    inset: 0 0 0 auto;
+    width: min(480px, 100vw);
+    height: 100dvh;
+    max-height: 100dvh;
+    border-radius: 16px 0 0 16px;
+    box-shadow: -12px 0 40px rgb(0 0 0 / 0.2);
+  }
+}
+
+/* The palette (UI-10) drops from the top on anything wider, centred where the eye already is,
+   and only as tall as what it found. */
+@media (min-width: 720px) {
+  dialog.sheet.palette {
+    inset: 12dvh 0 auto;
+    width: min(560px, calc(100vw - 32px));
+    height: auto;
+    max-height: 70dvh;
+    margin: 0 auto;
+    border-radius: 16px;
+    box-shadow: 0 12px 40px rgb(0 0 0 / 0.25);
+  }
+}
+
+.jump-search [role='listbox'] {
+  margin: 12px -20px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.jump-search [role='option'] {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 20px;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+
+/* Marked by more than colour: a bar at its edge as well as the tint. */
+.jump-search [role='option'][aria-selected='true'] {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  box-shadow: inset 3px 0 var(--accent);
+}
+
+.jump-search > p {
+  margin: 12px 0 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  dialog.sheet[open] {
+    animation: sheet-in 0.2s ease-out;
+  }
+}
+
+@keyframes sheet-in {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+}
+
+.sheet-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px 8px 20px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.sheet-head h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.sheet-body {
+  padding: 16px 20px calc(24px + env(safe-area-inset-bottom));
+}
+
+/* A form in a sheet is the sheet's own: no card around it, and its buttons kept in reach at
+   the bottom however long it runs. */
+.sheet .add-figure {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+/* Stuck at the sheet's own edge, never past it: a negative bottom here let the tray settle
+   24px and the home indicator's inset below the edge, which on an iPhone hid all of Save in the
+   goal sheet, the one tall enough to scroll (measured 26 Sep: 12px of it hidden with no inset). */
+.sheet .actions {
+  position: sticky;
+  bottom: 0;
+  margin: 0 -20px;
+  padding: 12px 20px calc(12px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+}
+
+/* The one destructive thing in a sheet, set apart below what it would destroy. */
+.danger-zone {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  font-size: 14px;
+}
+
+.danger-zone .danger-question {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+.danger-zone .form-error {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 14px;
+}
+
+/* A list in a sheet is the sheet's own, like a form: no card around it. */
+.sheet .term-history {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+.term-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.term-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 12px;
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+}
+
+/* An action beside a heading or a figure: small, but a thumb's height. */
+.section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+
+.section-head > :is(h3, h2) {
+  margin: 0;
+}
+
+button.small-action {
+  min-height: 44px;
+  padding: 0 14px;
+  font-size: 14px;
+}
+
+input.code {
+  text-align: center;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 24px;
+  letter-spacing: 0.3em;
+}
+
+.error {
+  margin-top: 16px;
+  color: var(--critical);
+  font-size: 14px;
+}
+
+.small {
+  font-size: 14px;
+}
+
+.notice {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  font-size: 14px;
+}
+
+/* A newer build is running this page's worker (OPS-04): above everything, and no louder than
+   the notice it is. */
+.notice.update {
+  margin: 0 0 16px;
+}
+
+.dashboard p {
+  margin: 0 0 8px;
+}
+
+.dashboard h2 {
+  margin: 32px 0 8px;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.label {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* The one number the screen leads with: large, and in proportional figures, which read
+   tighter than tabular ones at this size. */
+.hero {
+  margin: 24px 0 8px;
+}
+
+.hero-value {
+  font-size: 48px;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+/* The currency switch sits beside the figure it changes (ACCT-16, Nora 7 Oct): on a line
+   of its own, with its legend, it pushed the rate two lines further down. */
+.hero-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+}
+
+.hero-line .views {
+  margin: 0;
+}
+
+.tiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 40px;
+  margin: 16px 0 8px;
+}
+
+/* A phone sets the tiles two by two rather than one under another (UI-05). Stacked at 32px,
+   with the chart's caveats open, the plot began at 1060px on a 390×844 screen; two by two at
+   22px, with the caveats behind the info control, at 608px (measured 26 Sep). At 22px
+   $188,412.00 is 134px against a column of 171px. */
+@media (max-width: 480px) {
+  .tiles {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px 16px;
+  }
+
+  .tiles .total {
+    font-size: 22px;
+  }
+}
+
+/* The chart's colours, worn beside the name of what they stand for (UI-05). */
+.tile .swatch {
+  vertical-align: -1px;
+}
+
+/* ─── the chart's head ─── */
+
+.history-head {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 32px 0 8px;
+}
+
+.dashboard .history-head h2 {
+  margin: 0;
+}
+
+/* ─── the chart ─── */
+
+.chart {
+  margin: 8px 0 0;
+}
+
+.chart-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+  margin-bottom: 4px;
+}
+
+.chart-key span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chart-plot {
+  position: relative;
+  min-width: 0;
+}
+
+.chart-plot svg {
+  display: block;
+  overflow: visible;
+  touch-action: pan-y;
+}
+
+.chart-plot svg:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.chart .line {
+  fill: none;
+  stroke: var(--series);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.chart .line.cash {
+  stroke: var(--cash);
+}
+
+.chart .line.investments {
+  stroke: var(--investments);
+}
+
+.chart .line.debt {
+  stroke: var(--debt);
+}
+
+.chart .line.property {
+  stroke: var(--property);
+}
+
+/* Over the stacked columns: ink, not a fourth colour, since it is their sum and not a part. */
+.chart .line.net-overlay {
+  stroke: var(--ink);
+  stroke-width: 1.5;
+}
+
+.chart .segment {
+  stroke: var(--surface);
+  stroke-width: 1;
+}
+
+.chart .segment.cash,
+.swatch.cash {
+  fill: var(--cash);
+  background: var(--cash);
+}
+
+.chart .segment.investments,
+.swatch.investments {
+  fill: var(--investments);
+  background: var(--investments);
+}
+
+.chart .segment.debt,
+.swatch.debt {
+  fill: var(--debt);
+  background: var(--debt);
+}
+
+.chart .segment.property,
+.swatch.property {
+  fill: var(--property);
+  background: var(--property);
+}
+
+.chart .column-hover {
+  fill: var(--line);
+  opacity: 0.5;
+}
+
+.swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 6px;
+  border-radius: 2px;
+}
+
+.tooltip-row {
+  display: flex;
+  align-items: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.views {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 4px 0 12px;
+  padding: 0;
+  border: 0;
+}
+
+/* The range sits under the view (UI-07): one control in two rows, not two controls. */
+.views + .views {
+  margin-top: -6px;
+}
+
+.views legend {
+  float: left;
+  margin-right: 4px;
+  line-height: 32px;
+}
+
+.views label {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.views label:has(input:checked) {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.views label:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Hidden but focusable, and held inside its label: the global input rule is width: 100%,
+   which on an absolute input with no positioned ancestor is the viewport's width, and scrolled
+   the whole page sideways (24 Sep). */
+.views input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.chart .axis {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+
+.chart .axis.zero {
+  stroke: var(--muted);
+}
+
+.chart .tick {
+  fill: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.chart .marker line {
+  stroke: var(--muted);
+  stroke-width: 1;
+}
+
+.chart .marker text {
+  fill: var(--muted);
+  font-size: 12px;
+}
+
+/* A projection (GOAL-02) is the same series going on, so the same colour, broken more coarsely
+   than a rebuilt day so the two guesses are not mistaken for each other: a rebuilt day is a
+   record walked back, a projection is no record at all. Its band is the series' colour, faint. */
+.chart .line.projected {
+  stroke-dasharray: 6 5;
+}
+
+.chart .band {
+  fill: var(--series);
+  fill-opacity: 0.14;
+  stroke: none;
+}
+
+.chart .band.cash {
+  fill: var(--cash);
+}
+
+.chart .band.investments {
+  fill: var(--investments);
+}
+
+.chart .band.debt {
+  fill: var(--debt);
+}
+
+.chart .level line {
+  stroke: var(--muted);
+  stroke-width: 1;
+  stroke-dasharray: 2 3;
+}
+
+.chart .level text {
+  fill: var(--muted);
+  font-size: 12px;
+}
+
+.assumes {
+  margin-top: 8px;
+}
+
+.assumes p {
+  margin: 0 0 6px;
+}
+
+.chart .crosshair line {
+  stroke: var(--muted);
+  stroke-width: 1;
+}
+
+.chart .crosshair circle {
+  fill: var(--series);
+  stroke: var(--surface);
+  stroke-width: 2;
+}
+
+.tooltip {
+  position: absolute;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  transform: translateX(-50%);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.tooltip strong {
+  font-size: 16px;
+}
+
+.chart-table {
+  margin-top: 8px;
+}
+
+.chart-table summary {
+  color: var(--muted);
+  cursor: pointer;
+}
+
+/* UI-01: the table scrolls, not the page. */
+.table-scroll {
+  max-width: 100%;
+  margin-top: 8px;
+  overflow-x: auto;
+}
+
+.table-scroll:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.chart-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+/* With the box scrolling, a period stays on one line rather than stacking its year under it. */
+.chart-table td:first-child {
+  white-space: nowrap;
+}
+
+.chart-table th {
+  color: var(--muted);
+  font-weight: 400;
+  text-align: left;
+}
+
+.chart-table :is(th, td) {
+  padding: 4px 8px 4px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.chart-table td.amount {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.chart .crosshair circle.cash {
+  fill: var(--cash);
+}
+
+.chart .crosshair circle.investments {
+  fill: var(--investments);
+}
+
+.chart .crosshair circle.debt {
+  fill: var(--debt);
+}
+
+/* ─── the spending pace (BUD-02) ─── */
+
+/* The month in the series colour, turned to the standing's own once over or ahead, as the
+   words under the figure are: the colour agrees with them and is never the only telling. The
+   pace is a rule to measure by, not a series, so it is muted and broken. Last month is the
+   same colour as this one, faint, because it is the same thing a month earlier. */
+.pace-chart {
+  margin-top: 12px;
+}
+
+.chart .line.spent.over {
+  stroke: var(--critical);
+}
+
+.chart .line.spent.ahead {
+  stroke: var(--warning);
+}
+
+.chart .crosshair circle.spent.over {
+  fill: var(--critical);
+}
+
+.chart .crosshair circle.spent.ahead {
+  fill: var(--warning);
+}
+
+.chart .line.pace {
+  stroke: var(--muted);
+  stroke-width: 1.5;
+  stroke-dasharray: 5 4;
+}
+
+.chart .line.last-month {
+  stroke-opacity: 0.3;
+}
+
+/* ─── the groups ─── */
+
+/* A group wears its side's colour from the chart as a rule down its left edge (UI-05): a
+   card is debt, a brokerage investments, the same as its tile and its band in the stack. The
+   name beside it says the same, so the colour is never the only way to tell. */
+.group.cash {
+  box-shadow: inset 4px 0 0 var(--cash);
+}
+
+.group.investments {
+  box-shadow: inset 4px 0 0 var(--investments);
+}
+
+.group.debt {
+  box-shadow: inset 4px 0 0 var(--debt);
+}
+
+.group.property {
+  box-shadow: inset 4px 0 0 var(--property);
+}
+
+/* Each group is a card of its own (ACCT-09): with one run of rules down the page, Nora could
+   not see where a group ended or which figure was its total. The header's heavier rule sets
+   the total apart from the rows it sums, and the total sits in the amounts' column. */
+.group {
+  margin: 16px 0 0;
+  padding: 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.groups {
+  margin-top: 32px;
+}
+
+.group-head {
+  padding: 14px 0 10px;
+  border-bottom: 2px solid var(--ink);
+}
+
+/* Groups open closed (Nora, 25 Sep): the first screen is each group's total, and the rows are
+   a tap away. Closed, the card is its header alone, so the rule that sets the total apart from
+   its rows goes with them. */
+summary.group-head {
+  display: block;
+  cursor: pointer;
+  list-style: none;
+}
+
+summary.group-head::-webkit-details-marker {
+  display: none;
+}
+
+.group details:not([open]) > .group-head {
+  border-bottom: 0;
+}
+
+.group summary h2 > span:first-child::before {
+  content: '›';
+  display: inline-block;
+  width: 0.8em;
+  color: var(--muted);
+  transition: transform 0.15s;
+}
+
+.group details[open] > summary h2 > span:first-child::before {
+  transform: rotate(90deg);
+}
+
+.group summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.dashboard .group h2 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 16px;
+  margin: 0;
+  font-size: 20px;
+}
+
+.dashboard .group-head p {
+  margin: 4px 0 0;
+}
+
+/* The budget card has no rows for the rule to set its header apart from, and a rule straight
+   above its bar read as a second bar (Nora, 27 Sep). */
+.budget-card .group-head {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+/* Its last line is the bar more often than not, now that the title is the link (27 Sep). */
+.budget-card {
+  padding-bottom: 14px;
+}
+
+.budget-card > p:last-child {
+  margin-bottom: 0;
+}
+
+.group-count {
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.group-total {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ─── what changed this month (ACCT-13) ─── */
+
+.bridge {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bridge > li {
+  border-bottom: 1px solid var(--line);
+}
+
+.bridge > li:last-child {
+  border-bottom: 0;
+}
+
+/* Name and figure on one line, the bar across under both: a phone keeps the bar the card's
+   whole width rather than what a name leaves beside it. */
+.bridge summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 6px 16px;
+  padding: 12px 0;
+  cursor: pointer;
+  list-style: none;
+}
+
+.bridge summary::-webkit-details-marker {
+  display: none;
+}
+
+/* The group cards' chevron, after the name: the swatch keeps the first place, as on a tile. */
+.bridge-name::after {
+  content: '›';
+  display: inline-block;
+  margin-left: 6px;
+  color: var(--muted);
+  transition: transform 0.15s;
+}
+
+.bridge details[open] > summary .bridge-name::after {
+  transform: rotate(90deg);
+}
+
+.bridge-amount {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.bridge-track {
+  position: relative;
+  grid-column: 1 / -1;
+  height: 8px;
+}
+
+/* Where the month started: each bar is read against it. */
+.bridge-start {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  width: 1px;
+  background: var(--line);
+}
+
+.bridge-bar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  min-width: 2px;
+  border-radius: 4px;
+}
+
+.bridge-bar.cash {
+  background: var(--cash);
+}
+
+.bridge-bar.investments {
+  background: var(--investments);
+}
+
+.bridge-bar.property {
+  background: var(--property);
+}
+
+.bridge-bar.debt {
+  background: var(--debt);
+}
+
+/* The rate, the unsided and the new are not sides: muted ink, never a fifth hue. */
+.bridge-bar.other,
+.swatch.other {
+  background: var(--muted);
+}
+
+/* Counted for the first time: under the walk and not a step of it, so set off by the heavier
+   rule that sets a total apart from its rows. */
+.bridge.apart {
+  border-top: 2px solid var(--line);
+}
+
+.bridge-detail {
+  padding: 0 0 8px;
+}
+
+.bridge-detail p {
+  margin: 0 0 8px;
+}
+
+.guess {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 12px;
+  vertical-align: 1px;
+}
+
+.group-control {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 4px 12px;
+}
+
+.group-control .error {
+  flex-basis: 100%;
+  margin: 0;
+  text-align: right;
+}
+
+.total {
+  font-size: 32px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* Stale is not failed: amber, and a clock, so it never rests on colour alone (UI-06). The
+   clock is a mask so it takes the text's colour, light or dark. */
+:is(.rate, .age).stale {
+  color: var(--warning);
+}
+
+:is(.rate, .age).stale::before {
+  content: '';
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  margin-right: 0.3em;
+  vertical-align: -0.15em;
+  background: currentColor;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.25' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 7v5l3 2'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+}
+
+/* A read that worked but complained (BANK-09): amber like stale, and a warning sign in place
+   of the clock, so it never rests on colour alone either. */
+.warning {
+  margin-top: 16px;
+  color: var(--warning);
+}
+
+.warning > p {
+  margin: 0;
+}
+
+.warning > p::before {
+  content: '';
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  margin-right: 0.3em;
+  vertical-align: -0.15em;
+  background: currentColor;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3 2 20h20z'/%3E%3Cpath d='M12 10v4M12 17v.01'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+}
+
+.warning > ul {
+  margin: 4px 0 0;
+  padding-left: 1.5em;
+}
+
+/* The accounts a warning is about, each a way to its page: a row of links that wraps, each
+   44px to tap, in the ink of a link rather than the warning's amber. */
+.warning .warned {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 16px;
+  margin: 0 0 4px;
+  padding: 0;
+  list-style: none;
+}
+
+.warning .warned a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--ink);
+}
+
+/* An account counted twice (BANK-15): the two names in link ink, and the command that joins
+   them on a line of its own, wrapped at any character so a uuid never widens a phone's page,
+   and taken whole by one tap so it is copied without a stray space. */
+.warning li > a {
+  color: var(--ink);
+}
+
+.warning li > p {
+  margin: 4px 0;
+}
+
+.warning .command {
+  display: block;
+  margin-bottom: 8px;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+
+.accounts {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Name and amount on one line, the age and the group beneath: narrow enough for a phone with
+   no scroll. */
+.accounts li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 6px 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.accounts li:last-child {
+  border-bottom: 0;
+}
+
+.accounts .account {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.accounts .amount {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.accounts .age {
+  font-size: 13px;
+}
+
+.accounts .note {
+  grid-column: 1 / -1;
+}
+
+.remove-asset {
+  margin-top: 16px;
+}
+
+/* ─── one account (ACCT-10) ─── */
+
+a {
+  color: inherit;
+  text-decoration-color: var(--line);
+  text-underline-offset: 3px;
+}
+
+a:hover {
+  text-decoration-color: currentColor;
+}
+
+a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.accounts .available {
+  display: block;
+  margin: 0;
+  font-size: 13px;
+}
+
+.details h2 {
+  margin: 16px 0 0;
+  font-size: 24px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.details p {
+  margin: 0 0 8px;
+}
+
+.details h3 {
+  margin: 0 0 4px;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.details .hero-value {
+  margin-top: 16px;
+}
+
+.back {
+  color: var(--muted);
+}
+
+.details-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 12px;
+  margin: 16px 0 0;
+}
+
+.terms,
+.add-figure,
+.term-history,
+.goal-counted {
+  margin: 24px 0 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.figures {
+  margin: 12px 0 0;
+}
+
+.figure {
+  display: grid;
+  grid-template-columns: minmax(0, 11em) minmax(0, 1fr);
+  gap: 4px 16px;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+
+.figure dd {
+  margin: 0;
+  min-width: 0;
+}
+
+.figure dd p {
+  margin: 2px 0 0;
+}
+
+.figure-value {
+  font-size: 20px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* A phone puts each figure's name above its value rather than squeeze both. */
+@media (max-width: 480px) {
+  .figure {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.term-history ul {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.term-history li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+}
+
+.term-history li .error {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+.confirm {
+  display: inline-flex;
+  gap: 12px;
+}
+
+/* ─── goals (GOAL-01) ─── */
+
+/* The accent, not a side's colour: a goal can count cash and investments at once, or a loan,
+   and the bar says how far along, not which side. */
+.goal-bar {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  height: 8px;
+  margin: 8px 0 4px;
+  border: 0;
+  border-radius: 4px;
+  background: var(--line);
+  color: var(--accent);
+  appearance: none;
+}
+
+.goal-bar::-webkit-progress-bar {
+  border-radius: 4px;
+  background: var(--line);
+}
+
+.goal-bar::-webkit-progress-value {
+  border-radius: 4px;
+  background: var(--accent);
+}
+
+.goal-bar::-moz-progress-bar {
+  border-radius: 4px;
+  background: var(--accent);
+}
+
+.goal-counted h3 {
+  margin: 0;
+}
+
+/* ─── budgets (BUD-01) ─── */
+
+.budget-nav {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  margin: 4px 0 16px;
+  font-weight: 600;
+}
+
+.budget-nav a {
+  text-decoration: none;
+}
+
+/* Over budget is the one place a bar is red: it is the thing to notice this month. */
+.goal-bar.over {
+  color: var(--critical);
+}
+
+.goal-bar.over::-webkit-progress-value {
+  background: var(--critical);
+}
+
+.goal-bar.over::-moz-progress-bar {
+  background: var(--critical);
+}
+
+/* Ahead of the month's pace (UI-11): not over yet, and going to be at this rate. */
+.goal-bar.ahead {
+  color: var(--warning);
+}
+
+.goal-bar.ahead::-webkit-progress-value {
+  background: var(--warning);
+}
+
+.goal-bar.ahead::-moz-progress-bar {
+  background: var(--warning);
+}
+
+/* ─── the month by what needs looking at (UI-11) ─── */
+
+/* The tick on a bar is today: a bar past its tick is spending faster than the month goes. */
+.spend-bar {
+  position: relative;
+}
+
+.pace-tick {
+  position: absolute;
+  top: 4px;
+  width: 2px;
+  height: 16px;
+  margin-left: -1px;
+  border-radius: 1px;
+  background: var(--ink);
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.standing.over {
+  color: var(--critical);
+  font-weight: 600;
+}
+
+.standing.ahead {
+  color: var(--warning);
+  font-weight: 600;
+}
+
+.standing.on-track {
+  color: var(--good);
+  font-weight: 600;
+}
+
+.good {
+  color: var(--good);
+}
+
+/* Under the Plaid failure it fixes (BANK-12), or the banks that stopped moving (BANK-18): the
+   button, then what it says next. */
+.sign-in-again,
+.read-again {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin: 8px 0 12px;
+}
+
+.sign-in-again p,
+.read-again p {
+  margin: 0;
+}
+
+/* What a read that changed nothing says is a sentence in the page's ink, not the amber. */
+.warning .read-again p {
+  color: var(--ink);
+}
+
+/* A link that does what a button does: the one thing the card asks for. */
+a.button-link {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 10px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.budget-categorize {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 0 0;
+  padding: 12px 12px 12px 16px;
+  border: 1px solid var(--saffron);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.details .budget-categorize p {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  margin: 0;
+  font-size: 14px;
+}
+
+.budget-group {
+  margin-top: 24px;
+}
+
+.details h3.budget-group-head {
+  margin: 24px 4px 8px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.budget-group .budget-group-head {
+  margin-top: 0;
+}
+
+/* Each group a card, as the overview's are (ACCT-09), so where one ends is plain. */
+.budget-lines,
+.budget-fold-list,
+.card-list ul,
+.card-list-items {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.budget-lines,
+.budget-folds,
+.card-list ul,
+.card-list-items {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.budget-line {
+  position: relative;
+  padding: 12px 16px;
+  border-top: 1px solid var(--line);
+}
+
+.budget-line:first-child {
+  border-top: 0;
+}
+
+.budget-line.selected,
+.budget-fold-list li:has([aria-current='page']) {
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.budget-line-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.budget-line-name {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+/* The whole row opens the category; the budget button sits above that. */
+.budget-line-name::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+/* A goal's row opens its sheet, not a page (GOAL-04), so its name is a button that reads as the
+   categories' links do. */
+button.goal-line-open,
+button.goal-line-open:hover {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+}
+
+button.goal-line-open:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.budget-line .amount {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.budget-line-budget {
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+button.budget-line-budget {
+  position: relative;
+  z-index: 1;
+  min-height: 44px;
+  margin: -12px -8px -12px 0;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--accent);
+  font-weight: 400;
+  text-decoration: underline dashed;
+  text-underline-offset: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+button.budget-line-budget:hover {
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+.details .budget-line-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.details .budget-line-note.over {
+  color: var(--critical);
+  font-weight: 600;
+}
+
+.budget-folds {
+  margin-top: 24px;
+}
+
+.budget-fold + .budget-fold {
+  border-top: 1px solid var(--line);
+}
+
+.budget-fold summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 0 16px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.budget-fold summary::-webkit-details-marker {
+  display: none;
+}
+
+.budget-fold summary > :first-child {
+  flex: 1;
+}
+
+.budget-fold summary::after {
+  content: '⌄';
+  color: var(--muted);
+}
+
+.budget-fold[open] summary::after {
+  content: '⌃';
+}
+
+.budget-fold-list li {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 0 16px 0 28px;
+  border-top: 1px solid var(--line);
+}
+
+.budget-fold-list .amount {
+  font-variant-numeric: tabular-nums;
+}
+
+.budget-manage {
+  margin-top: 24px;
+  text-align: center;
+}
+
+/* ─── the month, day by day (BUD-03) ─── */
+
+/* One hue, cobalt, as the accent is: the dataviz reference's blue, four steps, validated as an
+   ordinal ramp against --surface (26 Sep): monotone, every step gap past 0.06 L. Lighter is
+   less in both modes. The dark ramp first ran the other way, palest near the surface, and Nora
+   read it backwards (26 Sep: "Lighter colors read as less to me"), so the dark steps now rise
+   from near white to the one nearest the surface (2.08:1). The day's number wears ink on the
+   light steps and the other ink on the dark, each past 4.5:1. */
+.calendar {
+  --shade-1: #86b6ef;
+  --shade-2: #3987e5;
+  --shade-3: #1c5cab;
+  --shade-4: #0d366b;
+  --shade-1-ink: var(--ink);
+  --shade-2-ink: var(--ink);
+  --shade-3-ink: #ffffff;
+  --shade-4-ink: #ffffff;
+  margin-top: 24px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .calendar {
+    --shade-1: #b7d3f6;
+    --shade-2: #6da7ec;
+    --shade-3: #3987e5;
+    --shade-4: #184f95;
+    --shade-1-ink: var(--bg);
+    --shade-2-ink: var(--bg);
+    --shade-3-ink: var(--bg);
+    --shade-4-ink: var(--ink);
+  }
+}
+
+.calendar-card {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+/* Seven equal columns at any width, a 2px surface gap between cells. */
+.calendar-grid {
+  width: 100%;
+  table-layout: fixed;
+  border-spacing: 2px;
+}
+
+.calendar-grid th {
+  padding: 0 0 4px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.calendar-grid td {
+  padding: 0;
+}
+
+/* 44px to tap, the app's floor. */
+.calendar-day {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  height: 44px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+span.calendar-day {
+  color: var(--muted);
+}
+
+.calendar-day.ahead {
+  opacity: 0.5;
+}
+
+button.calendar-day {
+  position: relative;
+  cursor: pointer;
+}
+
+/* A day holding something uncategorized (26 Sep): its shade leaves those out, as the month's
+   total does, so the day may read calmer than it was. An amber ! in the corner, ringed in the
+   surface so it reads on every step of the ramp, light and dark; the mark sits beside the
+   shade, not in it, so the ramp stays one hue. The day's label says it in words. */
+.calendar-flag {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--warning);
+  box-shadow: 0 0 0 1.5px var(--surface);
+  color: var(--surface);
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.calendar-flag::before {
+  content: '!';
+}
+
+.calendar-flag.in-key {
+  position: static;
+  margin-right: 2px;
+  vertical-align: -2px;
+  box-shadow: none;
+}
+
+button.calendar-day.shade-0 {
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.calendar-day.shade-1,
+.calendar-swatch.shade-1 {
+  background: var(--shade-1);
+  color: var(--shade-1-ink);
+}
+
+.calendar-day.shade-2,
+.calendar-swatch.shade-2 {
+  background: var(--shade-2);
+  color: var(--shade-2-ink);
+}
+
+.calendar-day.shade-3,
+.calendar-swatch.shade-3 {
+  background: var(--shade-3);
+  color: var(--shade-3-ink);
+}
+
+.calendar-day.shade-4,
+.calendar-swatch.shade-4 {
+  background: var(--shade-4);
+  color: var(--shade-4-ink);
+}
+
+button.calendar-day:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.calendar-key {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.calendar-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+}
+
+.calendar-key-note {
+  margin-left: 4px;
+}
+
+.details .budget-manage a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-weight: 500;
+}
+
+/* A row that opens somewhere else: a category, the rules, one rule. */
+.link-row {
+  display: flex;
+  box-sizing: border-box;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 16px;
+  color: var(--ink);
+  text-align: left;
+  text-decoration: none;
+}
+
+.link-row > :first-child {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.link-row::after {
+  content: '›';
+  color: var(--muted);
+}
+
+button.link-row {
+  border: 0;
+  border-radius: 0;
+  background: none;
+  font-weight: 400;
+}
+
+a.link-row:not(li a) {
+  margin-top: 24px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.card-list {
+  margin-top: 8px;
+}
+
+.card-list li + li,
+.card-list-items li + li {
+  border-top: 1px solid var(--line);
+}
+
+/* Nothing was ever filed here (Nora, 26 Sep): at the foot of its kind, and quieter. */
+.card-list li.unused .link-row > :first-child {
+  color: var(--muted);
+}
+
+.category-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.category-spent {
+  margin-bottom: 8px;
+}
+
+.category-budget {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-top: 12px;
+}
+
+.details .category-budget p {
+  margin: 0;
+}
+
+.category-entries {
+  margin-top: 24px;
+}
+
+.budget-offer-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.details .budget-offers p,
+.sheet .budget-offers p {
+  margin: 0 0 6px;
+}
+
+.rules-find {
+  display: flex;
+  gap: 8px;
+  margin: 16px 0 0;
+}
+
+.rules-find input {
+  flex: 1;
+  min-width: 0;
+}
+
+.rules-find select {
+  max-width: 45%;
+}
+
+.rule-payee {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The month beside the category on a wide window, the Mac's included: choosing a category
+   changes the right side and leaves the list where it was. */
+.page:has(.budget-split) {
+  max-width: 1200px;
+}
+
+.budget-split {
+  display: grid;
+  grid-template-columns: minmax(0, 420px) minmax(0, 1fr);
+  align-items: start;
+  gap: 32px;
+}
+
+/* ─── sorting (UI-08) ─── */
+
+/* One heading per day, in place of a date on every row; it stays in view over its day's rows. */
+.day-head {
+  position: sticky;
+  top: env(safe-area-inset-top, 0);
+  z-index: 1;
+  margin: 8px 0 0;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* Two lines, not three: who and which account on the left, what and where it is filed on the
+   right. The select that was the third line measured 44px on every row (26 Sep). */
+.accounts li.entry {
+  align-items: start;
+  gap: 2px 16px;
+  padding: 8px 0;
+}
+
+/* The account on one line: "Customized Cash Rewards Visa Signature" took two on a phone, and the
+   name is whole on the account's own page. */
+.entry .account > .muted {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The payee's name is a thumb's height to tap, though a line's height to see. */
+:is(.entry .account, .queue-head) a {
+  position: relative;
+}
+
+:is(.entry .account, .queue-head) a::after {
+  content: '';
+  position: absolute;
+  inset: -10px 0;
+}
+
+.entry-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  min-width: 0;
+}
+
+/* A chip: 26px to see, 44px to tap. The overhang above and below reaches into the row's padding
+   and the line beside it, so it takes no height from the list: at 32px with no overhang a row was
+   80px, and 65 of them with their days' headings 6,571px (390px wide, 26 Sep). */
+button.chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 12em;
+  min-height: 26px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+button.chip::after {
+  content: '';
+  position: absolute;
+  inset: -9px 0;
+}
+
+.chip-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Unsorted is the one that asks for something: the accent, dashed, since it is not yet a place. */
+button.chip.unsorted {
+  border-style: dashed;
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+button.chip[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+/* Where a filing came from, as a shape, so it never rests on colour alone: a tick for hers, a
+   loop for a rule's, two arrows for a transfer's pair, a spark for Monarch's guess. Masks, so each takes the text's colour. */
+.origin {
+  display: inline-block;
+  flex: none;
+  width: 13px;
+  height: 13px;
+  vertical-align: -2px;
+  background: currentColor;
+  mask: var(--mark) center / contain no-repeat;
+}
+
+.origin-chosen {
+  color: var(--accent);
+  --mark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 12.5l5 5L20 6.5'/%3E%3C/svg%3E");
+}
+
+.origin-rule {
+  color: var(--muted);
+  --mark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 12a8 8 0 1 1-2.3-5.6'/%3E%3Cpath d='M20 4v5h-5'/%3E%3C/svg%3E");
+}
+
+.origin-paired {
+  color: var(--muted);
+  --mark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 8h15M15 4l4 4-4 4'/%3E%3Cpath d='M20 16H5M9 12l-4 4 4 4'/%3E%3C/svg%3E");
+}
+
+.origin-guess {
+  color: var(--muted);
+  --mark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black'%3E%3Cpath d='M12 2l2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2z'/%3E%3C/svg%3E");
+}
+
+.origin-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 4px 0 0;
+}
+
+.rule-offer p {
+  margin: 4px 0 0;
+  font-size: 14px;
+}
+
+.rule-offer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 16px;
+}
+
+/* The picker: a search, then her recent choices, then every category by kind. */
+.picker > input[type='search'] {
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.pick-group h3 {
+  margin: 20px 0 4px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.pick-list {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pick-group .pick-list {
+  margin: 0;
+}
+
+.pick-list button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0 4px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: none;
+  color: var(--ink);
+  font-weight: 400;
+  text-align: left;
+}
+
+.pick-list button[aria-current='true'] {
+  font-weight: 600;
+}
+
+.pick-list button[aria-current='true']::after {
+  content: '✓';
+  color: var(--accent);
+}
+
+.take-back {
+  margin-top: 24px;
+}
+
+.take-back .hint {
+  margin-top: 4px;
+}
+
+/* The queue: one transaction at a time, big enough to read at arm's length. */
+.queue-card {
+  margin-top: 12px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.details .queue-card p {
+  margin: 0 0 4px;
+}
+
+.queue-position {
+  font-variant-numeric: tabular-nums;
+}
+
+.queue-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 16px;
+}
+
+.details .queue-head h4 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.queue-amount {
+  font-family: var(--display);
+  font-size: 24px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* The queue's choices are its main act: a full 44px each, not the list's 32. */
+.queue-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 16px 0 8px;
+}
+
+.queue-choices button.chip {
+  min-height: 44px;
+  padding: 0 16px;
+  font-size: 15px;
+}
+
+.queue-choices button.chip::after {
+  content: none;
+}
+
+.queue-choices button.chip.more {
+  border-style: dashed;
+  color: var(--muted);
+}
+
+.queue-nav {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+
+.queue-done {
+  margin-top: 12px;
+}
+
+/* ─── activity and payees (ACCT-14) ─── */
+
+.activity-search {
+  margin: 8px 0 16px;
+}
+
+.activity-recurring,
+.payee-filing,
+.payee section {
+  margin-top: 24px;
+}
+
+.spark {
+  margin: 12px 0 0;
+}
+
+.spark svg {
+  display: block;
+  width: 100%;
+  max-width: 480px;
+  height: auto;
+}
+
+.spark-bar {
+  fill: var(--series);
+  pointer-events: none;
+}
+
+/* The month still running, lighter: its column has not finished growing. */
+.spark-bar.running {
+  fill-opacity: 0.5;
+}
+
+.spark-base {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+
+.spark-hit {
+  fill: transparent;
+}
+
+.spark-hit:hover {
+  fill: var(--line);
+  fill-opacity: 0.5;
+}
+
+.spark-tick {
+  fill: var(--muted);
+  font-size: 9px;
+}
+
+.spark-table table {
+  border-collapse: collapse;
+  margin-top: 8px;
+}
+
+.spark-table th,
+.spark-table td {
+  padding: 2px 16px 2px 0;
+  font-weight: 400;
+  text-align: left;
+}
+
+.spark-table td {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}

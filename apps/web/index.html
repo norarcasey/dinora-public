@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta
+      name="description"
+      content="Every account in one place, read-only: balances, budgets, goals, projections and history."
+    />
+    <title>Dinora</title>
+    <!-- iOS reads these, not the manifest, when the app is added to the Home Screen. The
+         icons and theme colour are linked at build time from pwa.config.ts. -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Dinora" />
+    <!-- The dark --bg (UI-06). Before the light theme colour the build appends, since a browser
+         takes the first whose media matches; the build's has none, so it is the light one. -->
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b1120" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
