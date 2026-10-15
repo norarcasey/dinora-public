@@ -103,7 +103,7 @@ describe('guessGroup beyond them', () => {
       group: 'investment',
       or: 'cash',
     });
-    expect(guessGroup('Cuenta Online Ejemplo', 0)).toEqual({ kind: 'likely', group: 'cash' });
+    expect(guessGroup('Cuenta Online Castellana', 0)).toEqual({ kind: 'likely', group: 'cash' });
     expect(guessGroup('Mortgage', 0)).toEqual({ kind: 'likely', group: 'loan' });
     expect(guessGroup('Student Loans', 0)).toEqual({ kind: 'likely', group: 'loan' });
     expect(guessGroup('Sapphire Preferred', 0)).toEqual({ kind: 'likely', group: 'card' });

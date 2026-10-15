@@ -59,6 +59,18 @@ export type PlaidNightlyEnv = NightlyEnv & {
 
 type Source = 'simplefin' | 'plaid';
 
+/**
+ * The keys that say an aggregator is in use at all (DIN-19). None of them set is a copy that
+ * does not use it, and its night is skipped; some set is a configuration left half-finished,
+ * and fails naming the rest. `PLAID_ENV` is not among them: it has a default.
+ */
+export const AGGREGATOR_KEYS = {
+  simplefin: ['SIMPLEFIN_ACCESS_URL'],
+  plaid: ['PLAID_CLIENT_ID', 'PLAID_SECRET', 'PLAID_ACCESS_TOKENS'],
+} as const satisfies Record<Source, readonly (keyof PlaidNightlyEnv)[]>;
+
+const DATABASE_KEYS = ['SUPABASE_URL', 'SUPABASE_SECRET_KEY'] as const;
+
 /** What the run answers the cron with. Counts only: Vercel logs it (invariant 4). */
 export type NightlyOutcome =
   | {
@@ -74,7 +86,9 @@ export type NightlyOutcome =
       readonly rebuilt: number;
       readonly markedDrops: boolean;
     }
-  | { readonly ok: false; readonly reason: string; readonly recorded: boolean };
+  | { readonly ok: false; readonly reason: string; readonly recorded: boolean }
+  /** None of `AGGREGATOR_KEYS` is set: nothing was asked and nothing recorded. */
+  | { readonly ok: false; readonly skipped: true; readonly reason: string };
 
 // `guid`, not `uuid`: Zod 4's uuid checks the version bits, which Postgres does not, and the
 // local seed's users are `1111…` and `2222…`.
@@ -234,11 +248,11 @@ async function store(c: Connected, source: Source, rows: Rows, run: Run): Promis
   };
 }
 
-function missing<K extends string>(
-  env: Partial<Record<K, string | undefined>>,
-  keys: readonly K[],
-): NightlyOutcome | null {
-  const absent = keys.filter((k) => (env[k] ?? '').trim() === '');
+function unconfigured(env: PlaidNightlyEnv, source: Source): NightlyOutcome | null {
+  const blank = (k: keyof PlaidNightlyEnv): boolean => (env[k] ?? '').trim() === '';
+  const own: readonly (keyof PlaidNightlyEnv)[] = AGGREGATOR_KEYS[source];
+  if (own.every(blank)) return { ok: false, skipped: true, reason: 'not configured' };
+  const absent = [...own, ...DATABASE_KEYS].filter(blank);
   return absent.length === 0
     ? null
     : { ok: false, reason: `not configured: ${absent.join(', ')}`, recorded: false };
@@ -249,7 +263,7 @@ export async function nightly(
   fetchFn: typeof fetch,
   now: Date,
 ): Promise<NightlyOutcome> {
-  const unset = missing(env, ['SIMPLEFIN_ACCESS_URL', 'SUPABASE_URL', 'SUPABASE_SECRET_KEY']);
+  const unset = unconfigured(env, 'simplefin');
   if (unset !== null) return unset;
   const c = await connect(env, 'simplefin', fetchFn, now);
   if ('ok' in c) return c;
@@ -345,13 +359,7 @@ export async function plaidNightly(
   fetchFn: typeof fetch,
   now: Date,
 ): Promise<NightlyOutcome> {
-  const unset = missing(env, [
-    'PLAID_CLIENT_ID',
-    'PLAID_SECRET',
-    'PLAID_ACCESS_TOKENS',
-    'SUPABASE_URL',
-    'SUPABASE_SECRET_KEY',
-  ]);
+  const unset = unconfigured(env, 'plaid');
   if (unset !== null) return unset;
   const c = await connect(env, 'plaid', fetchFn, now);
   if ('ok' in c) return c;

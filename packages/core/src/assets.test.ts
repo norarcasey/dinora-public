@@ -312,7 +312,7 @@ describe('standings and totals', () => {
   });
 });
 
-describe('which side an asset counts toward (ACCT-21)', () => {
+describe('which side an asset counts toward', () => {
   it('is investments for crypto and property for everything else', () => {
     expect(assetSide('crypto')).toBe('investments');
     for (const kind of ['home', 'vehicle', 'valuables'] as const) {
@@ -344,7 +344,7 @@ describe('which side an asset counts toward (ACCT-21)', () => {
   });
 });
 
-describe('which value counts (ACCT-11)', () => {
+describe('which value counts', () => {
   const home = asset('h');
   const estimate = (on: string, amount: number, overrides: Partial<AssetValueRow> = {}) =>
     value('h', on, amount, { source: 'estimate', provider: 'rentcast', ...overrides });
@@ -425,7 +425,7 @@ describe('changes', () => {
   });
 });
 
-describe('an asset and its loan start together (ACCT-19, ACCT-20)', () => {
+describe('an asset and its loan start together', () => {
   const home = asset('h', { financed_by: 'mortgage' });
   const property = (rows: [string, number][]) =>
     propertyRows(

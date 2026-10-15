@@ -47,7 +47,16 @@ import {
 import { parse } from '../../packages/core/src/parse.ts';
 import { detail, report } from '../../packages/core/src/simplefin.ts';
 import { storeSql } from '../bank/simplefin.ts';
+import { flag } from '../argv.ts';
 import { stack } from '../db/stack.ts';
+import type { Item } from './keys.ts';
+import {
+  items as itemsIn,
+  nextItem,
+  readCredentials,
+  readKeys as readKeysIn,
+  relinkArgs,
+} from './keys.ts';
 import { linkPage } from './page.ts';
 
 function fail(message: string): never {
@@ -65,35 +74,17 @@ function credentialFile(): string {
 
 function lines(): Map<string, string> {
   const file = credentialFile();
-  const found = new Map<string, string>();
-  if (!existsSync(file)) return found;
-  for (const line of readFileSync(file, 'utf8').split('\n')) {
-    const at = line.indexOf('=');
-    if (at > 0 && !line.startsWith('#')) found.set(line.slice(0, at), line.slice(at + 1).trim());
-  }
-  return found;
+  return existsSync(file) ? readCredentials(readFileSync(file, 'utf8')) : new Map<string, string>();
 }
 
 function readKeys(): PlaidKeys {
-  const found = lines();
-  const clientId = found.get('PLAID_CLIENT_ID');
-  const secret = found.get('PLAID_SECRET');
-  const env = plaidEnv(found.get('PLAID_ENV') ?? '');
-  if (clientId === undefined || secret === undefined || env === null) {
-    fail(`no keys in ${credentialFile()}. Keep them first: pnpm plaid:keys`);
-  }
-  if (!wellFormed(clientId, secret)) fail(`the keys in ${credentialFile()} are not Plaid's form.`);
-  return { clientId, secret, env };
+  const keys = readKeysIn(lines(), credentialFile());
+  if (!keys.ok) fail(keys.reason);
+  return keys.value;
 }
 
-/** Each linked item, `PLAID_ITEM_<n>=<product> <access token>`. */
-function items(): { product: string; token: string }[] {
-  return [...lines()]
-    .filter(([k]) => k.startsWith('PLAID_ITEM_'))
-    .map(([, v]) => {
-      const [product = '', token = ''] = v.split(' ');
-      return { product, token };
-    });
+function items(): Item[] {
+  return itemsIn(lines());
 }
 
 async function stdin(): Promise<string[]> {
@@ -268,7 +259,7 @@ async function linkCommand(): Promise<void> {
   if (!exchanged.ok) fail(exchanged.reason);
   const item = parse(exchangeSchema, exchanged.body);
   if (!item.ok) fail('the exchange answered without an access token.');
-  const n = items().length + 1;
+  const n = nextItem(lines());
   appendFileSync(credentialFile(), `PLAID_ITEM_${n}=${product} ${item.value.access_token}\n`);
   chmodSync(credentialFile(), 0o600);
   console.log(
@@ -283,11 +274,9 @@ async function linkCommand(): Promise<void> {
  * production's `PLAID_ACCESS_TOKENS` changes, and the next nightly simply answers again.
  */
 async function relinkCommand(): Promise<void> {
-  const args = process.argv.slice(3);
-  const at = args.indexOf('--add');
-  const adding = at === -1 ? null : readProduct(args[at + 1] ?? '');
-  if (at !== -1 && adding === null) fail(`--add takes one of: ${READ_PRODUCTS.join(', ')}`);
-  const wanted = (at === -1 ? args : [...args.slice(0, at), ...args.slice(at + 2)]).join(' ');
+  const relink = relinkArgs(process.argv.slice(3));
+  if (!relink.ok) fail(relink.reason);
+  const { wanted, adding } = relink.value;
   const keys = readKeys();
   const linked = items();
   if (linked.length === 0) fail('nothing linked yet: pnpm plaid:link <product>');
@@ -352,15 +341,12 @@ async function pullCommand(): Promise<void> {
   }
 }
 
-function flag(name: string): string | undefined {
-  const i = process.argv.indexOf(name);
-  return i === -1 ? undefined : process.argv[i + 1];
-}
-
 /** What `plaidNightly` would store, stored locally through the same `bank_store`. */
 async function storeCommand(): Promise<void> {
   const keys = readKeys();
-  const email = flag('--email') ?? 'one@example.test';
+  const emailFlag = flag(process.argv, '--email');
+  if (!emailFlag.ok) fail(emailFlag.reason);
+  const email = emailFlag.value ?? 'one@example.test';
   const s = await stack(process.cwd(), false);
   const container = `supabase_db_${s.projectId}`;
   const psql = (input: string): string =>

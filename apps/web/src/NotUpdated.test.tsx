@@ -80,7 +80,7 @@ beforeEach(() => {
   window.location.hash = '';
 });
 
-describe('the mark in the header (BANK-18)', () => {
+describe('the mark in the header', () => {
   it('is not there while every balance is fresh, or before the accounts are held', () => {
     state.accounts = held([account({ institution: 'PSCU', name: 'Member Savings' })]);
     show();

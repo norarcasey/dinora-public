@@ -98,21 +98,25 @@ end;
 $$;
 
 -- --------------------------------------------------------------------------------------
--- The system never hard-deletes, and service_role is the system.
+-- Nothing hard-deletes: not the system, which runs as service_role, and not her, who runs
+-- as authenticated. Removing a row is setting deleted_at (DIN-24). anon holds nothing at
+-- all, checked above.
 -- --------------------------------------------------------------------------------------
 
 do $$
 declare
   offenders text;
 begin
-  select string_agg(c.relname, ', ' order by c.relname) into offenders
-  from pg_class c join pg_namespace n on n.oid = c.relnamespace
+  select string_agg(c.relname || ' (' || r.role || ')', ', ' order by c.relname, r.role)
+  into offenders
+  from pg_class c join pg_namespace n on n.oid = c.relnamespace,
+       unnest(array['authenticated', 'service_role']) as r(role)
   where n.nspname = 'public' and c.relkind in ('r', 'p')
-    and has_table_privilege('service_role', c.oid, 'DELETE, TRUNCATE');
+    and has_table_privilege(r.role, c.oid, 'DELETE, TRUNCATE');
   if offenders is not null then
-    raise exception 'service_role can DELETE or TRUNCATE: %', offenders;
+    raise exception 'DELETE or TRUNCATE held on: %', offenders;
   end if;
-  raise notice 'PASS  service_role can delete from no table';
+  raise notice 'PASS  neither authenticated nor service_role can delete from any table';
 end;
 $$;
 

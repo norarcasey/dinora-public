@@ -104,14 +104,25 @@ describe('nightly', () => {
     expect(store?.body).toMatchObject({ p_drops_from: null, p_detail: 'gen.auth: re-link' });
   });
 
-  it('names what is not configured, and touches nothing', async () => {
+  it('names what a half-finished configuration lacks, and touches nothing', async () => {
     const w = world();
-    const outcome = await nightly({ SUPABASE_URL: 'https://db.test' }, w.fetch, NOW);
+    const outcome = await nightly(
+      { SIMPLEFIN_ACCESS_URL: ENV.SIMPLEFIN_ACCESS_URL, SUPABASE_URL: 'https://db.test' },
+      w.fetch,
+      NOW,
+    );
     expect(outcome).toEqual({
       ok: false,
-      reason: 'not configured: SIMPLEFIN_ACCESS_URL, SUPABASE_SECRET_KEY',
+      reason: 'not configured: SUPABASE_SECRET_KEY',
       recorded: false,
     });
+    expect(w.calls).toHaveLength(0);
+  });
+
+  it('skips a copy that does not use SimpleFIN, rather than failing it (DIN-19)', async () => {
+    const w = world();
+    const outcome = await nightly({ ...ENV, SIMPLEFIN_ACCESS_URL: ' ' }, w.fetch, NOW);
+    expect(outcome).toEqual({ ok: false, skipped: true, reason: 'not configured' });
     expect(w.calls).toHaveLength(0);
   });
 
@@ -291,7 +302,7 @@ describe('plaidNightly', () => {
       { status: 400 },
     );
 
-  it('stores the other banks and names the one that wants signing in again (BANK-10)', async () => {
+  it('stores the other banks and names the one that wants signing in again', async () => {
     const w = plaidWorld((token) => (token === 'access-production-2' ? login() : ok()));
     const outcome = await plaidNightly(PLAID_ENV, w.fetch, NOW);
     expect(outcome).toMatchObject({ ok: true });
@@ -303,7 +314,7 @@ describe('plaidNightly', () => {
     expect(w.calls.some((c) => c.url.endsWith('/rest/v1/bank_pulls'))).toBe(false);
   });
 
-  it('fails, naming the bank, when every bank wants signing in again (UI-09)', async () => {
+  it('fails, naming the bank, when every bank wants signing in again', async () => {
     const w = plaidWorld(login);
     const outcome = await plaidNightly(
       { ...PLAID_ENV, PLAID_ACCESS_TOKENS: 'access-production-1' },
@@ -324,6 +335,16 @@ describe('plaidNightly', () => {
     });
   });
 
+  it('skips a copy with none of the Plaid keys, rather than failing it (DIN-19)', async () => {
+    const w = plaidWorld();
+    expect(await plaidNightly(ENV, w.fetch, NOW)).toEqual({
+      ok: false,
+      skipped: true,
+      reason: 'not configured',
+    });
+    expect(w.calls).toHaveLength(0);
+  });
+
   it("says what is not configured, and refuses keys not in Plaid's form", async () => {
     const w = plaidWorld();
     expect(await plaidNightly({ ...PLAID_ENV, PLAID_ACCESS_TOKENS: ' ' }, w.fetch, NOW)).toEqual({
@@ -342,7 +363,7 @@ describe('plaidNightly', () => {
     });
   });
 
-  describe('new transactions (BANK-14)', () => {
+  describe('new transactions', () => {
     const CARD = 'access-production-2';
     const item = (token: string) =>
       token === CARD

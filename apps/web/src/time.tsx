@@ -35,7 +35,7 @@ export function useNow(): number {
 
 /**
  * Her day on this device, `YYYY-MM-DD`. A card's terms change on a calendar day where she is,
- * not in UTC: read at 8pm in Springfield, UTC is already tomorrow.
+ * not in UTC: read at 8pm in San Diego, UTC is already tomorrow.
  */
 export function localDay(now: number): string {
   const at = new Date(now);

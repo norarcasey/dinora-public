@@ -80,7 +80,7 @@ function saving(reached: boolean, onPace: boolean | null, on = '2026-10-01'): Pr
   };
 }
 
-describe('dueItems (ACCT-15)', () => {
+describe('dueItems', () => {
   it('lists a promo ending and a goal due, soonest first', () => {
     const due = dueItems(
       [account('a')],

@@ -43,7 +43,7 @@ function asked(body: unknown, bearer: string | null = 'session') {
   });
 }
 
-describe('join (BANK-17)', () => {
+describe('join', () => {
   it('moves the pair as the owner, and answers with the counts', async () => {
     const w = world();
     const { status, answer } = await join(asked({ monarch: COPY, bank: BANK }), ENV, w.fetch);

@@ -64,14 +64,11 @@ import {
   describeUnready,
   linkPair,
   mappingOf,
-  parseMapping,
   plan,
   proposeMapping,
   readBalances,
-  readTarget,
   readTransactions,
   replay,
-  sameTarget,
   strangers,
   wroteNothing,
 } from '../../packages/core/src/monarch.ts';
@@ -79,15 +76,12 @@ import { stack } from '../db/stack.ts';
 import {
   accountsSql,
   assetSql,
-  decideSql,
   decisionsSql,
   linkAccountsSql,
   readAccounts,
   readAssetStored,
   readDecisions,
-  readDecisionsWritten,
   readLinkAccounts,
-  readRefusal,
   readStored,
   readUnready,
   readUserIds,
@@ -95,65 +89,37 @@ import {
   unreadySql,
   userSql,
 } from './sql.ts';
+import type { Query } from './steps.ts';
+import {
+  decide as decideIn,
+  isWorktree,
+  lastWord,
+  newest as newestIn,
+  readArgs,
+  readMappingFile as readMapping,
+  refusalOf,
+  settle,
+} from './steps.ts';
 
 function fail(message: string): never {
   console.error(`monarch: ${message}`);
   process.exit(1);
 }
 
-function flag(name: string): string | undefined {
-  const i = process.argv.indexOf(name);
-  return i === -1 ? undefined : process.argv[i + 1];
-}
+const args = readArgs(process.argv, homedir());
+if (!args.ok) fail(args.reason);
+const { production, dir, mappingFile } = args.value;
 
-/** Monarch names each download by the time it was made, so the newest is the last by name. */
-function newest(dir: string, prefix: string): string {
-  const found = readdirSync(dir)
-    .filter((f) => f.startsWith(prefix) && f.endsWith('.csv'))
-    .sort();
-  const last = found.at(-1);
+function newest(prefix: string): string {
+  const last = newestIn(readdirSync(dir), prefix);
   if (last === undefined) fail(`no ${prefix}*.csv in ${dir}. Download it from Monarch first.`);
   return join(dir, last);
 }
 
-const production = process.argv.includes('--production');
-const linkFrom = flag('--link');
-const linkTo = flag('--to');
-if ((linkFrom === undefined) !== (linkTo === undefined)) {
-  fail('--link takes the Monarch account and --to the bank account; give both or neither.');
-}
-const dir = (flag('--dir') ?? join(homedir(), 'Downloads')).replace(/^~(?=\/|$)/, homedir());
-const mappingFile = (flag('--mapping') ?? join(dir, 'monarch-accounts.json')).replace(
-  /^~(?=\/|$)/,
-  homedir(),
-);
-const setName = flag('--set');
-
-/**
- * Production is written from the main checkout, after the branch has merged: a worktree's
- * migrations may not be the ones production has, and `monarch_store` must be.
- */
-function isWorktree(): boolean {
-  const git = (arg: string) =>
-    execFileSync('git', ['rev-parse', '--path-format=absolute', arg], { encoding: 'utf8' }).trim();
-  return git('--git-dir') !== git('--git-common-dir');
-}
-
-type Query = (sql: string) => string;
-
-/** The database's reason for a refused query, from what the refused command printed. */
-function refusalOf(error: unknown): string {
-  const printed = (stream: unknown) => (typeof stream === 'string' ? stream : '');
-  const output =
-    error instanceof Error && 'stdout' in error && 'stderr' in error
-      ? `${printed(error.stdout)}\n${printed(error.stderr)}`
-      : '';
-  return readRefusal(output) ?? 'it printed no reason';
-}
-
 async function target(): Promise<Query> {
   if (production) {
-    if (isWorktree()) fail('--production runs from the main checkout, after the branch merges.');
+    if (isWorktree(process.cwd()))
+      fail('--production runs from the main checkout, after the branch merges.');
     return (sql) => {
       // A file rather than an argument: a payload is megabytes, and argv lands in `ps`.
       const scratch = mkdtempSync(join(tmpdir(), 'monarch-'));
@@ -210,9 +176,7 @@ function describeMapping(mapping: Mapping, notes: ReadonlyMap<string, string> = 
 }
 
 const query = await target();
-const users = readUserIds(
-  query(userSql(production ? null : (flag('--email') ?? 'one@example.test'))),
-);
+const users = readUserIds(query(userSql(production ? null : args.value.email)));
 if (!users.ok || users.value.length !== 1) {
   fail(
     production
@@ -225,8 +189,8 @@ if (onlyUser === undefined) fail('no user.');
 const userId: string = onlyUser;
 
 function readExport() {
-  const transactionsFile = newest(dir, 'Transactions_');
-  const balancesFile = newest(dir, 'Balances_');
+  const transactionsFile = newest('Transactions_');
+  const balancesFile = newest('Balances_');
   const transactions = readTransactions(readFileSync(transactionsFile, 'utf8'));
   if (!transactions.ok) fail(`${transactionsFile}: ${transactions.reason}`);
   const balances = readBalances(readFileSync(balancesFile, 'utf8'));
@@ -247,27 +211,15 @@ function readDecided(): readonly Decision[] {
 }
 
 function decide(decisions: readonly Decision[]): number {
-  if (decisions.length === 0) return 0;
-  let written;
-  try {
-    written = readDecisionsWritten(query(decideSql(userId, decisions)));
-  } catch (error) {
-    fail(`the mapping was refused: ${refusalOf(error)}. Nothing of it was written.`);
-  }
-  if (!written.ok) fail("the mapping's answer could not be read.");
+  const written = decideIn(query, userId, decisions);
+  if (!written.ok) fail(written.reason);
   return written.value;
 }
 
 function readMappingFile(file: string): Mapping {
-  let raw: unknown;
-  try {
-    raw = JSON.parse(readFileSync(file, 'utf8'));
-  } catch {
-    fail(`${file} is not JSON.`);
-  }
-  const parsed = parseMapping(raw);
-  if (!parsed.ok) fail(`${file}: ${parsed.issues.join('; ')}`);
-  return parsed.value;
+  const read = readMapping(file);
+  if (!read.ok) fail(read.reason);
+  return read.value;
 }
 
 /** Nothing in the table yet: the mapping still lives in its file, and is read in once. */
@@ -292,14 +244,7 @@ function loadFromFiles(): void {
     mapping: readMappingFile(file),
   });
   const older = copies.map(dated);
-  // The file itself is the last word, even if a copy was touched after it.
-  const newestCopy = Math.max(0, ...older.map((c) => Date.parse(c.decided_at)));
-  const now = dated(mappingFile);
-  const last = {
-    ...now,
-    decided_at: new Date(Math.max(Date.parse(now.decided_at), newestCopy + 1)).toISOString(),
-  };
-  const written = decide(replay([...older, last]));
+  const written = decide(replay(lastWord(older, dated(mappingFile))));
   console.log(
     `Kept the mapping in Dinora: ${written} decision(s) from ${mappingFile}` +
       (older.length === 1 ? ' and the older copy beside it' : '') +
@@ -353,7 +298,7 @@ if (decisions.length === 0) {
     );
     process.exit(0);
   }
-} else if (existsSync(mappingFile) && !process.argv.includes('--show')) {
+} else if (existsSync(mappingFile) && !args.value.show) {
   console.log(`${mappingFile} is no longer read: the mapping is kept in Dinora (--show).\n`);
 }
 
@@ -361,35 +306,29 @@ const mapped = mappingOf(decisions);
 if (!mapped.ok) fail(`the mapping in Dinora has a decision for ${mapped.bad} it cannot read.`);
 const original = mapped.mapping;
 
-if (process.argv.includes('--show')) {
+if (args.value.show) {
   show(decisions);
   describeMapping(original);
   process.exit(0);
 }
 
-if (setName !== undefined) {
-  const why = flag('--why') ?? '';
-  const as = flag('--as') ?? '';
-  let target = readTarget(as);
-  if (target === null) {
-    fail('--as takes history, skip, asset:home, asset:vehicle, asset:valuables or link:<id>.');
-  }
-  if (why.trim() === '') fail('--set takes --why: a decision says why it was made.');
-  if (typeof target === 'object' && 'link' in target) {
-    const link = target.link;
+const set = args.value.set;
+if (set !== null) {
+  const accounts = () => {
     const dinora = readAccounts(query(accountsSql(userId)));
     if (!dinora.ok) fail(`could not read Dinora's accounts: ${dinora.issues.join('; ')}`);
-    const bank = dinora.value.find((a) => a.source_id === link);
-    if (bank === undefined) fail(`no bank account in Dinora is ${link}.`);
-    target = { link, is: `${bank.institution} · ${bank.name}` };
-  }
-  const before = original.accounts[setName];
-  if (before !== undefined && sameTarget(before, target)) {
-    console.log(`${setName} already goes there. Nothing was written.`);
+    return dinora.value;
+  };
+  const settled = settle(set, original, accounts, new Date().toISOString());
+  if (!settled.ok) fail(settled.reason);
+  const decision = settled.value;
+  if (decision === null) {
+    console.log(`${set.name} already goes there. Nothing was written.`);
     process.exit(0);
   }
-  decide([decisionOf(setName, target, why.trim(), new Date().toISOString())]);
-  describeMapping({ confirmed: true, accounts: { [setName]: target } });
+  decide([decision]);
+  const shown = mappingOf([decision]);
+  if (shown.ok) describeMapping(shown.mapping);
   console.log('Kept in Dinora. Run this again without --set to import with it.');
   process.exit(0);
 }
@@ -400,19 +339,20 @@ const { transactions, balances } = readExport();
 let using: Mapping = original;
 /** The Monarch name `--link` links, once the database agrees the two accounts exist. */
 let linkedName: string | null = null;
-if (linkFrom !== undefined && linkTo !== undefined) {
+const link = args.value.link;
+if (link !== null) {
   let sql: string;
   try {
-    sql = linkAccountsSql(userId, [linkFrom, linkTo]);
+    sql = linkAccountsSql(userId, [link.from, link.to]);
   } catch {
     fail('--link and --to each take an account id, as the home screen shows it.');
   }
   const pair = readLinkAccounts(query(sql));
   if (!pair.ok) fail(`could not read the two accounts: ${pair.issues.join('; ')}`);
-  const linked = linkPair(original, pair.value, linkFrom, linkTo);
+  const linked = linkPair(original, pair.value, link.from, link.to);
   if (!linked.ok) fail(`not linked: ${linked.reason}.`);
   using = linked.mapping;
-  linkedName = pair.value.find((a) => a.id === linkFrom)?.source_id ?? null;
+  linkedName = pair.value.find((a) => a.id === link.from)?.source_id ?? null;
 }
 
 function saveLink(): void {

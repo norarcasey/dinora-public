@@ -30,10 +30,10 @@ function estimable(overrides: Partial<Estimable> = {}): Estimable {
 
 describe('what is asked', () => {
   it('asks RentCast about a home with an address', () => {
-    expect(lookupOf(estimable({ address: '1 Main St, Springfield, IL, 62701' }))).toEqual({
+    expect(lookupOf(estimable({ address: '1 Main St, San Diego, CA, 92101' }))).toEqual({
       provider: 'rentcast',
       assetId: 'a',
-      address: '1 Main St, Springfield, IL, 62701',
+      address: '1 Main St, San Diego, CA, 92101',
     });
   });
 
@@ -41,7 +41,7 @@ describe('what is asked', () => {
     const car = estimable({
       kind: 'vehicle',
       vin: '2HGFE1F50PH000001',
-      postal_code: '62704',
+      postal_code: '92104',
       odometer_miles: 21_000,
       odometer_on: '2026-01-01',
     });
@@ -49,7 +49,7 @@ describe('what is asked', () => {
       provider: 'marketcheck',
       assetId: 'a',
       vin: '2HGFE1F50PH000001',
-      postalCode: '62704',
+      postalCode: '92104',
       miles: 21_000,
     });
   });

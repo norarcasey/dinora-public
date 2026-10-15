@@ -1,3 +1,5 @@
+// First: before any module that parses. See jitless.ts.
+import './jitless.ts';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StrictMode } from 'react';
 // The display face (UI-06): one weight, latin only. Imported here, not fetched from a font

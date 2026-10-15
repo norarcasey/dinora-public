@@ -11,8 +11,9 @@ The short list. Violating one is a bug even if every test passes. Each says why 
 1. **Amounts are integer minor units, never floats.** Floats drift by cents over a sum, and a
    total that disagrees with the bank's by a cent is a total nobody trusts again.
 2. **Nothing is ever hard-deleted.** A sync that runs again, or a delete made by mistake, must
-   never lose history — history is the point of the app. Owned tables carry `deleted_at`;
-   `service_role`, which the sync runs as, holds DELETE on nothing.
+   never lose history — history is the point of the app. Owned tables carry `deleted_at`,
+   and removing a row is setting it, for her as for the sync: neither `authenticated` nor
+   `service_role` holds DELETE or TRUNCATE on any table, and `pnpm db:verify` checks both.
 3. **Every currency conversion stores the rate it used and the date of that rate.** A total in
    dollars over euro accounts has to reproduce later: last March in USD must not move because
    today's rate did.

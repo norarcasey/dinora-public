@@ -135,7 +135,7 @@ describe('netWorthByDay', () => {
     expect(history.days[0]?.kind).toBe('rebuilt');
   });
 
-  it("marks a day Monarch's when a figure is and none is rebuilt (ACCT-05)", () => {
+  it("marks a day Monarch's when a figure is and none is rebuilt", () => {
     const history = netWorthByDay(
       [
         snap('a', '2026-09-22', 1, 'monarch'),
@@ -418,7 +418,7 @@ describe('netWorthByDay, with property', () => {
     expect(history.sideAccounts.property).toBe(2);
   });
 
-  it('counts a crypto holding toward investments, not property (ACCT-21)', () => {
+  it('counts a crypto holding toward investments, not property', () => {
     const history = netWorthByDay(
       [snap('checking', '2026-09-24', 1_000)],
       sides,

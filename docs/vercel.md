@@ -21,8 +21,10 @@ In **Project → Settings → Environment Variables**, for Production:
     `.env.simplefin`. Pasted by hand into the dashboard: it is a credential, and a session
     never reads it.
 
-  Until all three are set a run answers 500 naming the ones missing, and records nothing —
-  there is no owner to record it for without the database.
+  Until both Supabase keys are set a run answers 500 naming the ones missing, and records
+  nothing — there is no owner to record it for without the database. Without
+  `SIMPLEFIN_ACCESS_URL` the SimpleFIN pull is skipped rather than failed, as is the Plaid
+  pull without any of its keys (DIN-19).
 
 - Any key a function needs, never prefixed `VITE_` — a `VITE_` variable is in the bundle.
   The `VITE_` values are baked in at build time by CI and are not read from here.

@@ -90,7 +90,7 @@ describe('typing the code', () => {
   });
 });
 
-describe('Face ID (SEC-01)', () => {
+describe('Face ID', () => {
   it('is offered where the device can do it, beside the code', async () => {
     device.canVerify = true;
     render(<SignIn />);

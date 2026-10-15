@@ -194,7 +194,7 @@ describe('monthBridge', () => {
     expect(adds(bridge)).toBe(true);
   });
 
-  it('counts a crypto holding’s change toward investments (ACCT-21)', () => {
+  it('counts a crypto holding’s change toward investments', () => {
     const bridge = monthBridge(
       [snap('checking', '2026-08-31', 100_000), snap('checking', '2026-09-26', 100_000)],
       sides({ checking: 'cash' }),
@@ -227,10 +227,10 @@ describe('monthBridge', () => {
   it('says what the euro did to what was already held, apart from what was saved', () => {
     const bridge = monthBridge(
       [
-        snap('ejemplo', '2026-08-31', 1_000_000, { currency: 'EUR' }),
-        snap('ejemplo', '2026-09-25', 1_000_000, { currency: 'EUR' }),
+        snap('castellana', '2026-08-31', 1_000_000, { currency: 'EUR' }),
+        snap('castellana', '2026-09-25', 1_000_000, { currency: 'EUR' }),
       ],
-      sides({ ejemplo: 'cash' }),
+      sides({ castellana: 'cash' }),
       [rate('2026-08-31', '1.1000'), rate('2026-09-25', '1.1700')],
     );
     // €10,000 untouched, at 1.10 then 1.17: $700 of change, none of it saved.
@@ -283,15 +283,15 @@ describe('monthBridge', () => {
     expect(part(bridge, 'cash')?.members.map((m) => m.id)).toEqual(['big', 'euro', 'small']);
   });
 
-  it('reads in euros at the ECB’s rate read backwards, and still sorts dollars by size (DIN-10)', () => {
+  it('reads in euros at the ECB’s rate read backwards, and still sorts dollars by size', () => {
     const bridge = monthBridge(
       [
         snap('card', '2026-08-31', -100_000),
         snap('card', '2026-09-26', -40_000),
-        snap('ejemplo', '2026-08-31', 100_000, { currency: 'EUR' }),
-        snap('ejemplo', '2026-09-26', 110_000, { currency: 'EUR' }),
+        snap('castellana', '2026-08-31', 100_000, { currency: 'EUR' }),
+        snap('castellana', '2026-09-26', 110_000, { currency: 'EUR' }),
       ],
-      sides({ card: 'debt', ejemplo: 'cash' }),
+      sides({ card: 'debt', castellana: 'cash' }),
       [rate('2026-08-31', '1.25'), rate('2026-09-26', '1.25')],
       [],
       'EUR',
@@ -326,10 +326,10 @@ describe('monthBridge', () => {
     expect(
       monthBridge(
         [
-          snap('ejemplo', '2026-08-31', 100, { currency: 'EUR' }),
-          snap('ejemplo', '2026-09-25', 100, { currency: 'EUR' }),
+          snap('castellana', '2026-08-31', 100, { currency: 'EUR' }),
+          snap('castellana', '2026-09-25', 100, { currency: 'EUR' }),
         ],
-        sides({ ejemplo: 'cash' }),
+        sides({ castellana: 'cash' }),
         [],
       ),
     ).toBeNull();

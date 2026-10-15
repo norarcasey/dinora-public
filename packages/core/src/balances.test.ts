@@ -283,7 +283,7 @@ describe('formatMinor', () => {
 describe('compareAccounts', () => {
   it('orders by bank, then name', () => {
     const rows = [
-      account({ id: '3', institution: 'Ejemplo', name: 'Cuenta' }),
+      account({ id: '3', institution: 'Castellana', name: 'Cuenta' }),
       account({ id: '2', institution: 'Bank of America', name: 'Travel' }),
       account({ id: '1', institution: 'Bank of America', name: 'Cash' }),
     ];

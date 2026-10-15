@@ -233,7 +233,7 @@ describe('spentByDay', () => {
   const file = makeFiler(categories, [], [], TODAY);
   const counted = new Map([
     ['card', 'USD'],
-    ['ejemplo', 'EUR'],
+    ['castellana', 'EUR'],
   ]);
   const rate: RateRow = {
     id: 'r',
@@ -245,7 +245,7 @@ describe('spentByDay', () => {
     rate_date: '2026-07-31',
     rate: '1.1111',
   };
-  const inEuros = (t: TransactionRow): TransactionRow => ({ ...t, account_id: 'ejemplo' });
+  const inEuros = (t: TransactionRow): TransactionRow => ({ ...t, account_id: 'castellana' });
 
   it('starts at nothing, adds each day, and stops at today in a running month', () => {
     const entries = entriesIn(

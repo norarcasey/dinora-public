@@ -113,7 +113,7 @@ describe('search', () => {
 describe('payeeYear', () => {
   const currencies = new Map([
     ['card', 'USD'],
-    ['ejemplo', 'EUR'],
+    ['castellana', 'EUR'],
   ]);
 
   it('is twelve months to this one, the oldest first, with its total and count', () => {
@@ -153,7 +153,7 @@ describe('payeeYear', () => {
   });
 
   it('converts at the month’s last rate and names it, or leaves the total unsaid', () => {
-    const euros = [txn('e', '2026-08-10', -1000, { account_id: 'ejemplo' })];
+    const euros = [txn('e', '2026-08-10', -1000, { account_id: 'castellana' })];
     const year = payeeYear('netflix', euros, currencies, [EUR_USD], TODAY);
     expect(year?.net).toEqual({ kind: 'summed', minor: -1100n });
     expect(year?.conversions.map((c) => c.rate.id)).toEqual(['r1']);

@@ -39,7 +39,7 @@ export function recentCategories(
   return recent;
 }
 
-/** Lower case and without accents, so "cafe" finds *Café* and "ejemplo" finds *EJEMPLO*. */
+/** Lower case and without accents, so "cafe" finds *Café* and "castellana" finds *CASTELLANA*. */
 function fold(text: string): string {
   return text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().trim();
 }

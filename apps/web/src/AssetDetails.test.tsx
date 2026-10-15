@@ -435,7 +435,7 @@ describe('what it is', () => {
     expect((await within(edit).findByRole('alert')).textContent).toContain('Not saved');
   });
 
-  it('names the code when Dinora answered and refused (OPS-04)', async () => {
+  it('names the code when Dinora answered and refused', async () => {
     updateAsset.mockRejectedValue(new WriteError('the asset was not saved', '42501'));
     show();
     const edit = editSheet();
@@ -596,7 +596,7 @@ describe('readDetails', () => {
 
   it('reads what a car is estimated with, and dates a new mileage today', () => {
     const read = readDetails(
-      { ...car, vin: ' 2hgfe1f50ph000001 ', postalCode: '62704', miles: '21,000' },
+      { ...car, vin: ' 2hgfe1f50ph000001 ', postalCode: '92104', miles: '21,000' },
       'USD',
       '2026-09-25',
       CAR,
@@ -606,7 +606,7 @@ describe('readDetails', () => {
       details: {
         address: null,
         vin: '2HGFE1F50PH000001',
-        postalCode: '62704',
+        postalCode: '92104',
         odometer: { miles: 21_000, on: '2026-09-25' },
       },
     });
@@ -629,9 +629,9 @@ describe('readDetails', () => {
   });
 
   it('keeps an address for a home only, and drops a car’s inputs from anything else', () => {
-    const home = { ...draft, kind: 'home' as const, address: ' 1 Main St, Springfield, IL ' };
+    const home = { ...draft, kind: 'home' as const, address: ' 1 Main St, San Diego, CA ' };
     expect(readDetails(home, 'USD', '2026-09-25')).toMatchObject({
-      details: { address: '1 Main St, Springfield, IL', vin: null },
+      details: { address: '1 Main St, San Diego, CA', vin: null },
     });
     expect(readDetails({ ...draft, vin: '2HGFE1F50PH000001' }, 'USD', '2026-09-25')).toMatchObject({
       details: { vin: null, address: null },
@@ -640,7 +640,7 @@ describe('readDetails', () => {
   });
 });
 
-describe('an estimate (ACCT-11)', () => {
+describe('an estimate', () => {
   function estimated(id: string, on: string, minor: number): AssetValueRow {
     return { ...valued(id, on, minor, 'estimate'), provider: 'marketcheck' };
   }
@@ -701,7 +701,7 @@ describe('an estimate (ACCT-11)', () => {
   });
 });
 
-describe('gold and silver (ACCT-12)', () => {
+describe('gold and silver', () => {
   const BRACELET: AssetRow = {
     ...CAR,
     id: 'bracelet',
@@ -887,7 +887,7 @@ describe('readDetails, for a piece of metal', () => {
   });
 });
 
-describe('crypto (ACCT-21)', () => {
+describe('crypto', () => {
   const REWARDS: AssetRow = {
     ...CAR,
     id: 'rewards',

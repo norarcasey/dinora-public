@@ -641,7 +641,7 @@ describe('mergeSync', () => {
   });
 });
 
-describe('plaidRows with transactions (BANK-14)', () => {
+describe('plaidRows with transactions', () => {
   const AT = '2026-09-27T09:00:00.000Z';
   const gemini = {
     place: 0,

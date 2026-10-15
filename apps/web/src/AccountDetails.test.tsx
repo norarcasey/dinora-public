@@ -254,7 +254,7 @@ describe('the account', () => {
     expect(text()).toContain("Set this account's group to Credit card");
   });
 
-  it('offers to read its source again once its balance has missed a night (BANK-18)', () => {
+  it('offers to read its source again once its balance has missed a night', () => {
     state.accounts = held([{ ...CARD, balance_at: '2026-09-23T09:00:00+00:00' }]);
     show();
     expect(text()).toContain('Not updated since 2 days ago');
@@ -446,7 +446,7 @@ describe('adding a figure', () => {
     expect(addTerm).not.toHaveBeenCalled();
   });
 
-  it('shows the unit inside the field, not in its name (UI-02)', () => {
+  it('shows the unit inside the field, not in its name', () => {
     show();
     const sheet = adding();
     const limit = sheet.getByLabelText('Credit limit');

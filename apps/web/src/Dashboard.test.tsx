@@ -286,7 +286,7 @@ describe('net worth, cash, investments and debt', () => {
     expect(tiles).toContain('Debt owed$11,434.56');
   });
 
-  it("keys each tile in its side's colour from the chart, beside its name (UI-05)", () => {
+  it("keys each tile in its side's colour from the chart, beside its name", () => {
     show();
     const swatches = [...document.querySelectorAll('.tiles .swatch')].map((i) => i.className);
     expect(swatches).toEqual(['swatch cash', 'swatch investments', 'swatch debt']);
@@ -313,7 +313,7 @@ describe('net worth, cash, investments and debt', () => {
         currency: 'EUR',
         balance_minor: 250_000,
         name: 'Cuenta Online',
-        institution: 'Ejemplo',
+        institution: 'Castellana',
       }),
     ]);
     state.rates = held([rate({ id: 'old', rate_date: '2026-09-22', rate: '1.1463' }), rate()]);
@@ -332,7 +332,7 @@ describe('net worth, cash, investments and debt', () => {
         currency: 'EUR',
         balance_minor: 250_000,
         name: 'Cuenta Online',
-        institution: 'Ejemplo',
+        institution: 'Castellana',
       }),
     ]);
     state.groups = held([chosen('a', 'card'), chosen('b', 'cash')]);
@@ -431,7 +431,7 @@ describe('the groups', () => {
     expect(group('Property').querySelector('details')?.open).toBe(true);
   });
 
-  it("rules each group in its side's colour, cards and loans both debt, the question in none (UI-05)", () => {
+  it("rules each group in its side's colour, cards and loans both debt, the question in none", () => {
     show();
     expect(group('Cash').classList.contains('cash')).toBe(true);
     expect(group('Credit cards').classList.contains('debt')).toBe(true);
@@ -462,7 +462,7 @@ describe('each account', () => {
     state.accounts = held(LINKED);
   });
 
-  it('opens its details from its name (ACCT-10)', () => {
+  it('opens its details from its name', () => {
     show();
     const link = screen.getByRole('link', { name: 'Auto Loan' });
     expect(link.getAttribute('href')).toBe('#/account/auto');
@@ -495,7 +495,7 @@ describe('each balance', () => {
     expect(text()).toContain('As of 3 hours ago');
   });
 
-  it('turns amber, with a clock, once the bank has missed a night (UI-06)', () => {
+  it('turns amber, with a clock, once the bank has missed a night', () => {
     state.accounts = held([account({ balance_at: '2026-09-21T09:00:00+00:00' })]);
     show();
     expect(text()).toContain('Not updated since 3 days ago');
@@ -766,7 +766,7 @@ describe('when the bank was last read', () => {
     expect(within(warning).queryAllByRole('link')).toHaveLength(0);
   });
 
-  it('says an account Monarch had and a bank now reads may be counted twice (BANK-15)', () => {
+  it('says an account Monarch had and a bank now reads may be counted twice', () => {
     state.accounts = held([
       account({
         id: 'm',
@@ -816,7 +816,7 @@ describe('when the bank was last read', () => {
     expect(screen.getByRole('alert').textContent).toContain('The Plaid read');
   });
 
-  it('offers to sign a Plaid bank in again under the failure that asks for it (BANK-12)', () => {
+  it('offers to sign a Plaid bank in again under the failure that asks for it', () => {
     state.pulls = held([
       pull('ok', '2026-09-24T11:00:00+00:00'),
       pull('ok', '2026-09-23T11:00:00+00:00', '', 'plaid'),
@@ -840,7 +840,7 @@ describe('when the bank was last read', () => {
     expect(screen.queryByRole('button', { name: 'Sign in again' })).toBeNull();
   });
 
-  it('offers it under the warning when the read kept the other banks (BANK-10)', () => {
+  it('offers it under the warning when the read kept the other banks', () => {
     state.pulls = held([
       pull('ok', '2026-09-24T11:00:00+00:00'),
       pull('ok', '2026-09-24T11:00:00+00:00', 'Harbor Mortgage needs signing in again', 'plaid'),
@@ -868,7 +868,7 @@ describe('when the bank was last read', () => {
     expect(screen.getAllByRole('button', { name: 'Sign in again' })).toHaveLength(1);
   });
 
-  it('links a SimpleFIN bank that wants signing in to the Bridge, and names its accounts (BANK-13)', () => {
+  it('links a SimpleFIN bank that wants signing in to the Bridge, and names its accounts', () => {
     state.accounts = held([
       account({ id: 'v', name: 'Retirement Savings', institution: 'Northwind' }),
     ]);
@@ -924,7 +924,7 @@ describe('offline', () => {
   });
 });
 
-describe('property (ACCT-06)', () => {
+describe('property', () => {
   function owned(overrides: Partial<AssetRow>): AssetRow {
     return {
       id: 'home',
@@ -1024,7 +1024,7 @@ describe('property (ACCT-06)', () => {
     expect(text(group('Loans'))).toContain('PSCU · for Civic');
   });
 
-  it('counts crypto with the investments, not the property (ACCT-21)', () => {
+  it('counts crypto with the investments, not the property', () => {
     state.accounts = held([
       account({ id: 'roth', name: 'Roth IRA', balance_minor: 50_000, holdings: 1 }),
     ]);
@@ -1098,7 +1098,7 @@ describe('property (ACCT-06)', () => {
   });
 });
 
-describe('goals (GOAL-01)', () => {
+describe('goals', () => {
   function goal(overrides: Partial<GoalRow>): GoalRow {
     return {
       id: 'fund',
@@ -1163,7 +1163,7 @@ describe('goals (GOAL-01)', () => {
   });
 });
 
-describe('what is due (ACCT-15)', () => {
+describe('what is due', () => {
   function promo(id: string, accountId: string, endsOn: string): TermRow {
     return {
       id,
@@ -1255,7 +1255,7 @@ describe('what is due (ACCT-15)', () => {
   });
 });
 
-describe('this month’s budget (BUD-01)', () => {
+describe('this month’s budget', () => {
   const AT = '2026-09-24T09:00:00+00:00';
 
   function spent(id: string, accountId: string, minor: number, category: string | null) {
@@ -1335,7 +1335,7 @@ describe('this month’s budget (BUD-01)', () => {
   });
 });
 
-describe('what changed this month (ACCT-13)', () => {
+describe('what changed this month', () => {
   beforeEach(() => {
     state.accounts = held([
       account({ id: 'checking', name: 'Checking', balance_minor: 120_000 }),

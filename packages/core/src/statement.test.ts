@@ -4,7 +4,7 @@ import { readStatement } from './statement.ts';
 
 const HEADER = 'Date,Principal,Unpaid principal balance';
 
-describe('a lender’s statement (ACCT-20)', () => {
+describe('a lender’s statement', () => {
   it('reads the unpaid principal as owed, oldest first, one figure a day', () => {
     const read = readStatement(
       [

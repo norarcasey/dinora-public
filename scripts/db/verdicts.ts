@@ -73,13 +73,14 @@ const DASHBOARD = 'Authentication → Sign In / Providers';
 /**
  * Whether a stranger can make themselves an account, read from `/auth/v1/settings`.
  *
- * Two assertions, and the second is not padding. The dashboard has two switches with
+ * Three assertions, and the second is not padding. The dashboard has two switches with
  * nearly the same name. "Allow new users to sign up" off is the lock that is wanted. The
  * email provider's own switch off is a lockout — every email sign-in fails, for everybody,
  * with `email_provider_disabled` — and a check that read only `disable_signup` would wave
  * it through. Both measured by Nora Bene against GoTrue on 19 Sep 2026, when production
  * signup turned out to have been open since the project was created: `shouldCreateUser:
- * false` in the client is a field in a request body, not a lock (SEC-3 there).
+ * false` in the client is a field in a request body, not a lock (SEC-3 there). The third,
+ * that email is the only way in at all, was added in DIN-13.
  */
 export function signupVerdict(settings: unknown): Verdict {
   if (!isRecord(settings)) {
@@ -107,5 +108,38 @@ export function signupVerdict(settings: unknown): Verdict {
         `  ${DASHBOARD} → Allow new users to sign up    → OFF  (this one stays off)`,
     };
   }
-  return { ok: true, message: 'signup check: closed to strangers, and email sign-in still works.' };
+  // DIN-13: an anonymous sign-in makes a second `authenticated` user, and `owner()`
+  // (api/_lib/nightly.ts) answers 503 to every function once there are two — a denial of
+  // service, not a read. Kept apart from the rest because it is the one with a known cost.
+  if (external.anonymous_users !== false) {
+    return {
+      ok: false,
+      message:
+        'ANONYMOUS SIGN-INS ARE ON (or unreadable). Each one makes a real authenticated user,\n' +
+        'and with two users every function refuses to guess whose rows to read.\n\n' +
+        `  ${DASHBOARD} → Allow anonymous sign-ins → OFF`,
+    };
+  }
+  // An allow-list, not a list of OAuth names: email is the one way in, and anything else
+  // that is not exactly `false` refuses — so a provider GoTrue adds later is refused until
+  // somebody has looked at it. Production had only email on when this was written
+  // (14 Oct 2026); passkeys sit outside `external` and only sign in an existing user.
+  const others = Object.entries(external)
+    .filter(([name, on]) => name !== 'email' && on !== false)
+    .map(([name]) => name);
+  if (settings.saml_enabled !== false) others.push('saml_enabled');
+  if (others.length > 0) {
+    return {
+      ok: false,
+      message:
+        'Signup is closed, but ANOTHER WAY IN IS ON (or unreadable). Email is the only one\n' +
+        'Dinora uses; every other provider is a door nobody is watching.\n\n' +
+        `  ${others.join('\n  ')}\n\n` +
+        `  ${DASHBOARD} → each of these → OFF  (SAML is turned off with the CLI's sso commands)`,
+    };
+  }
+  return {
+    ok: true,
+    message: 'signup check: closed to strangers, email is the only way in, and it still works.',
+  };
 }

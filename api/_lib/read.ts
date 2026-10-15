@@ -12,17 +12,12 @@
  */
 import { parse } from '../../packages/core/src/parse.ts';
 import { readRequestSchema } from '../../packages/core/src/reading.ts';
-import type { ReadAnswer, ReadSource } from '../../packages/core/src/reading.ts';
-import { nightly, plaidNightly } from './nightly.ts';
+import type { ReadAnswer } from '../../packages/core/src/reading.ts';
+import { AGGREGATOR_KEYS, nightly, plaidNightly } from './nightly.ts';
 import type { PlaidNightlyEnv, Supabase } from './nightly.ts';
 import { signedIn } from './session.ts';
 
 const DATABASE = ['SUPABASE_URL', 'SUPABASE_SECRET_KEY'] as const;
-
-const REQUIRED: Readonly<Record<ReadSource, readonly (keyof PlaidNightlyEnv)[]>> = {
-  simplefin: ['SIMPLEFIN_ACCESS_URL'],
-  plaid: ['PLAID_CLIENT_ID', 'PLAID_SECRET', 'PLAID_ACCESS_TOKENS'],
-};
 
 type Answered = { readonly status: number; readonly answer: ReadAnswer };
 
@@ -62,7 +57,7 @@ export async function readAgain(
   if (!asked.ok) return refused(400, 'expected a source: simplefin or plaid');
   const { source } = asked.value;
 
-  const missing = unset(env, REQUIRED[source]);
+  const missing = unset(env, AGGREGATOR_KEYS[source]);
   if (missing.length > 0) return refused(503, `not configured: ${missing.join(', ')}`);
 
   const read =

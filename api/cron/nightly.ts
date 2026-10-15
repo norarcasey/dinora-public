@@ -8,13 +8,20 @@
  * Side by side because none needs another: the rates finish in a fraction of what the
  * Bridge can take (BANK-02), so reading them costs the run no time, and a failure of any
  * one leaves the others' rows stored.
+ *
+ * An aggregator none of whose keys is set is skipped, not failed (DIN-19): a copy that reads
+ * only SimpleFIN, or only Plaid, stored everything it was configured to, and a red cron every
+ * night would teach its owner to ignore the one that means something.
  */
 import { isCronRequest } from '../_lib/cron.ts';
 import { coins } from '../_lib/crypto.ts';
 import { estimates } from '../_lib/estimates.ts';
 import { metals } from '../_lib/metals.ts';
 import { nightly, plaidNightly } from '../_lib/nightly.ts';
+import type { NightlyOutcome } from '../_lib/nightly.ts';
 import { rates } from '../_lib/rates.ts';
+
+const done = (o: NightlyOutcome): boolean => o.ok || 'skipped' in o;
 
 export async function GET(request: Request): Promise<Response> {
   if (!isCronRequest(request, process.env.CRON_SECRET)) {
@@ -36,7 +43,7 @@ export async function GET(request: Request): Promise<Response> {
   console.log(`nightly estimates: ${JSON.stringify(estimated)}`);
   console.log(`nightly metals: ${JSON.stringify(metalled)}`);
   console.log(`nightly crypto: ${JSON.stringify(coined)}`);
-  const ok = pull.ok && plaid.ok && rated.ok && estimated.ok && metalled.ok && coined.ok;
+  const ok = done(pull) && done(plaid) && rated.ok && estimated.ok && metalled.ok && coined.ok;
   return Response.json(
     { pull, plaid, rates: rated, estimates: estimated, metals: metalled, crypto: coined },
     { status: ok ? 200 : 500 },

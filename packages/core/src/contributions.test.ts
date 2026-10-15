@@ -26,7 +26,7 @@ const CURRENCIES = new Map([
   ['savings-2', 'USD'],
   ['visa', 'USD'],
   ['amex', 'USD'],
-  ['ejemplo', 'EUR'],
+  ['castellana', 'EUR'],
 ]);
 
 function txn(
@@ -373,13 +373,13 @@ describe('what a goal was given', () => {
   it('converts each currency at one stored rate, and says which', () => {
     const moves = [
       txn('usd', 'savings', '2026-09-02', 10_000),
-      txn('eur', 'ejemplo', '2026-09-03', 10_000),
+      txn('eur', 'castellana', '2026-09-03', 10_000),
     ];
     const { pairs, file } = setUp(moves, [choice('usd', 'transfers'), choice('eur', 'transfers')]);
     const month = goalMonth(
       goal('fund', { kind: 'save', target_minor: 1_000_000 }),
       '2026-09',
-      [link('fund', 'savings'), link('fund', 'ejemplo')],
+      [link('fund', 'savings'), link('fund', 'castellana')],
       moves,
       CURRENCIES,
       file,
@@ -397,12 +397,12 @@ describe('what a goal was given', () => {
   });
 
   it('says so when a currency has no rate yet, and a past month reads its last day’s', () => {
-    const moves = [txn('eur', 'ejemplo', '2026-08-03', 10_000)];
+    const moves = [txn('eur', 'castellana', '2026-08-03', 10_000)];
     const { pairs, file } = setUp(moves, [choice('eur', 'transfers')]);
     const month = goalMonth(
       goal('fund', { kind: 'save', target_minor: 1_000_000 }),
       '2026-08',
-      [link('fund', 'ejemplo')],
+      [link('fund', 'castellana')],
       moves,
       CURRENCIES,
       file,

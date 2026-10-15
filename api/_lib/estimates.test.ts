@@ -16,7 +16,7 @@ const HOME = {
   id: 'home',
   kind: 'home',
   currency: 'USD',
-  address: '1 Main St, Springfield, IL, 62701',
+  address: '1 Main St, San Diego, CA, 92101',
   postal_code: null,
   vin: null,
   odometer_miles: null,
@@ -29,7 +29,7 @@ const CAR = {
   id: 'car',
   kind: 'vehicle',
   address: null,
-  postal_code: '62704',
+  postal_code: '92104',
   vin: '2HGFE1F50PH000001',
   odometer_miles: 21_000,
   odometer_on: '2026-09-01',
@@ -85,13 +85,13 @@ function world(
 describe('the requests', () => {
   it('asks RentCast with the address and a wider set of comparables, its key in a header', () => {
     const { url, headers } = requestFor(
-      { provider: 'rentcast', assetId: 'home', address: '1 Main St, Springfield, IL, 62701' },
+      { provider: 'rentcast', assetId: 'home', address: '1 Main St, San Diego, CA, 92101' },
       'rc_key',
     );
     const parsed = new URL(url);
     expect(parsed.origin + parsed.pathname).toBe('https://api.rentcast.io/v1/avm/value');
     expect(Object.fromEntries(parsed.searchParams)).toEqual({
-      address: '1 Main St, Springfield, IL, 62701',
+      address: '1 Main St, San Diego, CA, 92101',
       compCount: '25',
       daysOld: '365',
     });
@@ -104,7 +104,7 @@ describe('the requests', () => {
         provider: 'marketcheck',
         assetId: 'car',
         vin: '2HGFE1F50PH000001',
-        postalCode: '62704',
+        postalCode: '92104',
         miles: 21_000,
       },
       'mc_key',
@@ -115,7 +115,7 @@ describe('the requests', () => {
       api_key: 'mc_key',
       vin: '2HGFE1F50PH000001',
       miles: '21000',
-      zip: '62704',
+      zip: '92104',
       dealer_type: 'franchise',
     });
   });

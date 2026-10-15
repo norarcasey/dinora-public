@@ -94,7 +94,7 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-describe('⌘K (UI-10)', () => {
+describe('⌘K', () => {
   it('opens on ⌘K and on Ctrl+K, and closes on it again', () => {
     render(<JumpTo />);
     expect(screen.queryByRole('combobox')).toBeNull();

@@ -61,7 +61,7 @@ describe('storeSql', () => {
   });
 });
 
-describe('the mapping kept in Dinora (ACCT-18)', () => {
+describe('the mapping kept in Dinora', () => {
   const decision = decisionOf(
     "Nora's $m0$ card",
     { link: 'ACT-1', is: 'Chase · Card' },

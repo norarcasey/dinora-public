@@ -52,10 +52,63 @@ describe('schemaVerdict', () => {
 });
 
 describe('signupVerdict', () => {
-  const closed = { disable_signup: true, external: { email: true } };
+  const closed = {
+    disable_signup: true,
+    saml_enabled: false,
+    external: { email: true, anonymous_users: false, phone: false, google: false },
+  };
 
   it('passes when signup is closed and email sign-in is on', () => {
     expect(signupVerdict(closed).ok).toBe(true);
+  });
+
+  // Production's answer on 14 Oct 2026, trimmed: what the deploy has to keep passing.
+  it('passes production as it stands', () => {
+    const production = {
+      external: { anonymous_users: false, apple: false, email: true, github: false, phone: false },
+      disable_signup: true,
+      mailer_autoconfirm: false,
+      sms_provider: 'twilio',
+      saml_enabled: false,
+      passkeys_enabled: true,
+    };
+    expect(signupVerdict(production).ok).toBe(true);
+  });
+
+  // DIN-13: a second, anonymous user turns every function into a 503.
+  it.each([true, undefined, 'yes'])('refuses anonymous sign-ins that are not off: %j', (on) => {
+    const verdict = signupVerdict({
+      ...closed,
+      external: { ...closed.external, anonymous_users: on },
+    });
+    expect(verdict.ok).toBe(false);
+    expect(verdict.message).toContain('ANONYMOUS SIGN-INS ARE ON');
+  });
+
+  it('refuses any other provider that is on, and names each', () => {
+    const verdict = signupVerdict({
+      ...closed,
+      external: { ...closed.external, google: true, phone: true },
+    });
+    expect(verdict.ok).toBe(false);
+    expect(verdict.message).toContain('ANOTHER WAY IN IS ON');
+    expect(verdict.message).toContain('google');
+    expect(verdict.message).toContain('phone');
+  });
+
+  // The allow-list: a provider this code has never heard of is refused, not waved through.
+  it('refuses a provider it does not know, unless it is plainly off', () => {
+    const withNew = (value: unknown) =>
+      signupVerdict({ ...closed, external: { ...closed.external, new_provider: value } });
+    expect(withNew(true).ok).toBe(false);
+    expect(withNew({ enabled: false }).ok).toBe(false);
+    expect(withNew(false).ok).toBe(true);
+  });
+
+  it('refuses SAML that is on or missing', () => {
+    expect(signupVerdict({ ...closed, saml_enabled: true }).message).toContain('saml_enabled');
+    const { disable_signup, external } = closed;
+    expect(signupVerdict({ disable_signup, external }).ok).toBe(false);
   });
 
   it('refuses when signup is open', () => {

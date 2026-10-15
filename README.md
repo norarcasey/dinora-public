@@ -8,7 +8,19 @@ opens in a browser, as an installed app on a phone, and as a Mac app. It only ev
 nothing in it can move money. (A euro bank through Enable Banking is planned, not built; the
 app already counts in dollars and euros for the assets entered by hand.)
 
+![The overview: net worth split into cash, investments and debt, and its history by day with a projection a year ahead](docs/screenshots/overview.png)
+
+<p>
+  <img src="docs/screenshots/budget.png" width="49%" alt="A month's budget: spent against budgeted, the pace through the month against last month's, and the transactions still to categorize">
+  <img src="docs/screenshots/goal.png" width="49%" alt="A savings goal: how far there, the pace of the last 90 days, and the date it reaches the target at that pace">
+</p>
+
+Every figure, bank and payee in these pictures is invented: they are the local stack with
+`pnpm db:demo` loaded (`supabase/demo.sql`), never a real account.
+
 ## What it does
+
+<img src="docs/screenshots/phone.png" width="240" align="right" alt="The overview on a phone, installed as a PWA">
 
 - **Net worth over time**, by day, with what changed from one month to the next and a
   projection forward from the history it has.
@@ -59,6 +71,10 @@ rests on. Three habits in them will look unfamiliar:
   a tracker that is not public. The comment beside one says what was decided.
 - **"Invariant 4"** is the fourth invariant in [`docs/architecture.md`](docs/architecture.md).
 - **Nora** is the one person it is built for, and **she** in a comment is her.
+- **Noradar, Nora Bene, Kinora and CruciNora** are other apps of hers, built the same way:
+  much here was measured in one of them first, and a comment that names one says so. Noradar
+  reports what each project has deployed; the Mac app's shell is lifted from Noradar's and
+  Kinora's.
 
 The public copy is one commit, exported from a private repository by `scripts/public/`: that
 history holds account names and figures that a snapshot can redact and two hundred commits
@@ -74,6 +90,7 @@ major) and pnpm 9 (`corepack enable` picks up the version in `package.json`).
 pnpm install
 pnpm db:start # the local Supabase stack (Docker)
 pnpm db:env   # writes apps/web/.env.local for it
+pnpm db:demo  # optional: a year of invented accounts for one@example.test
 pnpm dev      # the web app
 pnpm gate     # what CI runs: format, lint, typecheck, tests with coverage
 pnpm format   # the only command that rewrites files
@@ -110,10 +127,9 @@ account. Nothing is shared with anyone else's copy. Wherever the docs name a hos
      Then set `PLAID_CLIENT_ID`, `PLAID_SECRET`, `PLAID_ENV` and `PLAID_ACCESS_TOKENS` on
      Vercel.
 
-   A source you leave unconfigured is reported by name as `not configured`, and the other
-   still stores its rows. For now, though, that makes every nightly run answer 500, so
-   Vercel's cron log shows it as failed. Never give either one a credential that
-   can move money.
+   Set up either one or both. A source none of whose keys is set is skipped, and the night
+   still succeeds; one with only some of its keys set fails, naming the ones missing. Never
+   give either one a credential that can move money.
 
 5. **The Mac app** (optional, needs Xcode or the Command Line Tools). Put these in `.env.mac`
    at the repository root, which is ignored:

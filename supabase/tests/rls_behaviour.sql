@@ -1151,10 +1151,10 @@ begin
     '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated"}', true);
   set local role authenticated;
   insert into public.assets (user_id, name, kind, address)
-  values (owner, 'Apartment', 'home', '1 Main St, Springfield, IL, 62701')
+  values (owner, 'Apartment', 'home', '1 Main St, San Diego, CA, 92101')
   returning id into home;
   insert into public.assets (user_id, name, kind, vin, postal_code, odometer_miles, odometer_on)
-  values (owner, 'Car', 'vehicle', '2HGFE1F50PH000001', '62701', 12000, '2026-09-01')
+  values (owner, 'Car', 'vehicle', '2HGFE1F50PH000001', '92101', 12000, '2026-09-01')
   returning id into car;
 
   begin
@@ -2039,7 +2039,7 @@ begin
 end;
 $$;
 
--- A Monarch decision (ACCT-18) is withdrawn, never rewritten: the table is the history the
+-- A Monarch decision (ACCT-18) is withdrawn, never rewritten or deleted (DIN-15): the table is the history the
 -- file's copies used to be, and an edit in place would lose the decision it replaced.
 do $$
 declare
@@ -2077,6 +2077,13 @@ begin
     when check_violation then null;
   end;
 
+  begin
+    delete from public.monarch_decisions where id = first_id;
+    raise exception 'a decision was deleted, not withdrawn';
+  exception
+    when insufficient_privilege then null;
+  end;
+
   update public.monarch_decisions set deleted_at = now() where id = first_id;
   select count(*) into n from public.monarch_decisions
   where monarch_name = 'Card (...1234)' and deleted_at is null;
@@ -2091,7 +2098,7 @@ begin
     raise exception 'service_role can change a decision on monarch_decisions';
   end if;
 
-  raise notice 'PASS  monarch_decisions: withdrawn, never rewritten; one at a time; the job only adds';
+  raise notice 'PASS  monarch_decisions: withdrawn, never rewritten or deleted; one at a time; the job only adds';
 end;
 $$;
 

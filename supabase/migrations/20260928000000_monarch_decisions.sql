@@ -1,10 +1,10 @@
 -- Which Monarch account is which (ACCT-18): the mapping `pnpm monarch:import` imports with,
 -- kept here instead of only in `monarch-accounts.json` beside the export.
 --
--- Nora, 26 Sep 2026: "if that json file in downloads is important, we should copy it into the
--- app". It was the only record of every link and every `skip` decided with her (ACCT-05,
+-- By 26 Sep 2026 that file, kept beside the export, was too important to leave there:
+-- it was the only record of every link and every `skip` decided with her (ACCT-05,
 -- BANK-07, Northwind, Gemini, Meridian), fixed by hand beside a pile of `.before-*.json` copies —
--- and by 28 Sep it was no longer in Downloads at all but in Documents, with three of the six
+-- and within two days it had moved folders and lost three of its six
 -- copies, which is the file's fragility measured. Not the repo: it holds account names, last
 -- four digits and aggregator ids, and a commit would put them on GitHub.
 --

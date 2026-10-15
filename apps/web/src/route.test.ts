@@ -41,7 +41,7 @@ describe('parseRoute', () => {
     expect(parseRoute('#/budget/2026-8')).toEqual({ kind: 'dashboard' });
   });
 
-  it('reads a category’s month, the categories, the rules and the queue (UI-11)', () => {
+  it('reads a category’s month, the categories, the rules and the queue', () => {
     expect(parseRoute(categoryHref('a b'))).toEqual({
       kind: 'category',
       categoryId: 'a b',

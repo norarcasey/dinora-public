@@ -10,9 +10,14 @@
 --   * RLS enabled AND forced — forced so the table owner is not exempt. No policy is
 --     default deny; one policy per operation, each on `(select auth.uid())`, `to
 --     authenticated` so anon never matches.
---   * `deleted_at`: the system never hard-deletes. authenticated holds DELETE on its own
---     rows for an explicit, confirmed user action; service_role holds none, because the
---     system is what runs as service_role.
+--   * `deleted_at`: nothing hard-deletes (invariant 2). Removing a row is setting
+--     deleted_at, for her as for the system: no role holds DELETE or TRUNCATE, so there is
+--     no delete policy to write. Every table already built held to this; the pattern alone
+--     still granted DELETE until DIN-24 (14 Oct 2026), and monarch_decisions, the one table
+--     that copied it, had it revoked in DIN-15.
+--   * `revoke all` before the grants: the foundation leaves authenticated its default
+--     privileges, which on the local image are all seven, TRUNCATE included, and RLS does
+--     not govern TRUNCATE (20260924134228).
 --   * `unique (user_id, id)`, so a child can carry a composite foreign key to it. RLS
 --     checks a row's own user_id, not the row it points at — without this a user can
 --     attach their row to someone else's.
@@ -66,11 +71,9 @@ create policy things_update_own on public.things
   using ((select auth.uid()) = user_id)
   with check ((select auth.uid()) = user_id);
 
-create policy things_delete_own on public.things
-  for delete to authenticated
-  using ((select auth.uid()) = user_id);
-
-grant select, insert, update, delete on table public.things to authenticated;
+revoke all on table public.things from authenticated;
+revoke all on table public.things from service_role;
+grant select, insert, update on table public.things to authenticated;
 
 -- Server side (a Vercel function holding the service key) gets a grant only when it needs
 -- one, in the migration that needs it, and never DELETE:

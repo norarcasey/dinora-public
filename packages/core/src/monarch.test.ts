@@ -181,7 +181,7 @@ describe('lastFour', () => {
   });
 
   it('reads no other digits as an account number', () => {
-    expect(lastFour('42 Elm St Apt 7 Springfield IL 62704')).toBeNull();
+    expect(lastFour('42 Elm St Apt 7 San Diego CA 92104')).toBeNull();
     expect(lastFour('2024 Honda Civic Hybrid XLE')).toBeNull();
     expect(lastFour('Card (12345)')).toBeNull();
   });
@@ -270,7 +270,7 @@ describe('parseMapping', () => {
   });
 });
 
-describe('decisions (ACCT-18)', () => {
+describe('decisions', () => {
   const at = (day: number) => `2026-09-${String(day).padStart(2, '0')}T12:00:00.000Z`;
   const targets: Target[] = [
     { link: 'ACT-1', is: 'Chase · Card (1234)' },

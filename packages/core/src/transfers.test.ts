@@ -12,7 +12,7 @@ const CURRENCIES = new Map([
   ['card', 'USD'],
   ['other-card', 'USD'],
   ['loan', 'USD'],
-  ['ejemplo', 'EUR'],
+  ['castellana', 'EUR'],
 ]);
 
 function txn(
@@ -129,7 +129,7 @@ describe('pairing', () => {
     expect(
       partners([
         txn('a', 'checking', '2026-09-03', -5000),
-        txn('b', 'ejemplo', '2026-09-03', 5000),
+        txn('b', 'castellana', '2026-09-03', 5000),
       ]),
     ).toEqual({});
   });

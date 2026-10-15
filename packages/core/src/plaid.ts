@@ -471,7 +471,7 @@ export function mergeSync(item: string, pages: readonly SyncPage[]): Synced {
 
 /**
  * Plaid dates a transaction by day, not by moment. Noon UTC keeps that day the same one in
- * Springfield and in Spain, where midnight would move it to the day before in Springfield; Monarch's
+ * San Diego and in Spain, where midnight would move it to the day before in San Diego; Monarch's
  * rows are placed the same way (`monarch_store`).
  */
 function midday(date: string): string {

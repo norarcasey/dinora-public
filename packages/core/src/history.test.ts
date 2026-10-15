@@ -19,7 +19,7 @@ describe('snapshotRowSchema', () => {
     expect(snapshotRowSchema.parse(row)).toEqual(row);
   });
 
-  it("reads Monarch's days as their own kind (ACCT-05)", () => {
+  it("reads Monarch's days as their own kind", () => {
     expect(snapshotRowSchema.parse({ ...row, kind: 'monarch' }).kind).toBe('monarch');
   });
 

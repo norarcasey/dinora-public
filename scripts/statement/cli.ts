@@ -14,43 +14,39 @@
  */
 import { execFileSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { homedir, tmpdir } from 'node:os';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { z } from 'zod';
 
 import { parse } from '../../packages/core/src/parse.ts';
 import { readStatement } from '../../packages/core/src/statement.ts';
+import { expandHome, flag } from '../argv.ts';
 import { stack } from '../db/stack.ts';
 import { findAnswer, literal, readUserIds, userSql } from '../monarch/sql.ts';
+import type { Query } from '../monarch/steps.ts';
+import { isWorktree } from '../monarch/steps.ts';
 
 function fail(message: string): never {
   console.error(`statement: ${message}`);
   process.exit(1);
 }
 
-function flag(name: string): string | undefined {
-  const i = process.argv.indexOf(name);
-  return i === -1 ? undefined : process.argv[i + 1];
-}
-
 const production = process.argv.includes('--production');
-const account = parse(z.guid(), flag('--account'));
+const accountFlag = flag(process.argv, '--account');
+if (!accountFlag.ok) fail(accountFlag.reason);
+const account = parse(z.guid(), accountFlag.value);
 if (!account.ok) fail('--account takes the loan account’s id in Dinora.');
-const file = flag('--file')?.replace(/^~(?=\/|$)/, homedir());
-if (file === undefined) fail('--file takes the CSV to read.');
-
-/** As `monarch:import`: production is written from the main checkout, after the merge. */
-function isWorktree(): boolean {
-  const git = (arg: string) =>
-    execFileSync('git', ['rev-parse', '--path-format=absolute', arg], { encoding: 'utf8' }).trim();
-  return git('--git-dir') !== git('--git-common-dir');
-}
-
-type Query = (sql: string) => string;
+const fileFlag = flag(process.argv, '--file');
+if (!fileFlag.ok) fail(fileFlag.reason);
+if (fileFlag.value === undefined) fail('--file takes the CSV to read.');
+const file = expandHome(fileFlag.value);
+const emailFlag = flag(process.argv, '--email');
+if (!emailFlag.ok) fail(emailFlag.reason);
 
 async function target(): Promise<Query> {
   if (production) {
-    if (isWorktree()) fail('--production runs from the main checkout, after the branch merges.');
+    if (isWorktree(process.cwd()))
+      fail('--production runs from the main checkout, after the branch merges.');
     return (sql) => {
       // A file rather than an argument, since argv lands in `ps`.
       const scratch = mkdtempSync(join(tmpdir(), 'statement-'));
@@ -99,7 +95,7 @@ console.log(
 
 const query = await target();
 const users = readUserIds(
-  query(userSql(production ? null : (flag('--email') ?? 'one@example.test'))),
+  query(userSql(production ? null : (emailFlag.value ?? 'one@example.test'))),
 );
 if (!users.ok || users.value.length !== 1) {
   fail(

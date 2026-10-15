@@ -108,7 +108,7 @@ describe('signing out', () => {
 });
 
 describe('which screen', () => {
-  it("opens an account's details from the hash, and goes back to the dashboard (ACCT-10)", async () => {
+  it("opens an account's details from the hash, and goes back to the dashboard", async () => {
     state.session = { status: 'signed-in', user: { id: 'u', email: 'nora@example.test' } };
     window.location.hash = '#/account/card-1';
     render(<App />);
@@ -119,7 +119,7 @@ describe('which screen', () => {
   });
 });
 
-describe('the tabs (UI-04)', () => {
+describe('the tabs', () => {
   beforeEach(() => {
     state.session = { status: 'signed-in', user: { id: 'u', email: 'nora@example.test' } };
   });
@@ -152,7 +152,7 @@ describe('the tabs (UI-04)', () => {
   });
 });
 
-describe('Face ID (SEC-01)', () => {
+describe('Face ID', () => {
   beforeEach(() => {
     state.session = { status: 'signed-in', user: { id: 'u', email: 'nora@example.test' } };
     unlockWithDevice.mockReset();

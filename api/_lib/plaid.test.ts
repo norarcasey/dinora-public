@@ -104,7 +104,7 @@ describe('pullItems', () => {
     };
   }
 
-  it('reads the other banks and names the one that wants signing in again (BANK-10)', async () => {
+  it('reads the other banks and names the one that wants signing in again', async () => {
     const got = await pullItems(
       keys,
       ['g', 'c'],

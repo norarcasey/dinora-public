@@ -22,7 +22,7 @@ import { daysBetween } from './terms.ts';
 
 /**
  * Lower case, accents off, one space between words: `CAFÉ  Núñez` finds `cafe nunez`. Her
- * Ejemplo account (BANK-03) will send Spanish payees, and nobody types the accent on a phone.
+ * Castellana account (BANK-03) will send Spanish payees, and nobody types the accent on a phone.
  */
 export function fold(text: string): string {
   return text.normalize('NFD').replace(/\p{M}/gu, '').trim().replace(/\s+/g, ' ').toLowerCase();

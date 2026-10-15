@@ -12,6 +12,7 @@
     "./budgets": "./src/budgets.ts",
     "./contributions": "./src/contributions.ts",
     "./crypto": "./src/crypto.ts",
+    "./csp": "./src/csp.ts",
     "./doubles": "./src/doubles.ts",
     "./due": "./src/due.ts",
     "./estimates": "./src/estimates.ts",

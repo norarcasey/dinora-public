@@ -75,7 +75,7 @@ function txn(
     transacted_at: null,
     amount_minor: minor,
     payee: 'Whole Foods',
-    description: 'WHOLEFDS SPR 10234',
+    description: 'WHOLEFDS SDG 10234',
     source_category: null,
     pending: false,
     ...overrides,
@@ -220,7 +220,7 @@ describe('months', () => {
       '2026-08-30',
     );
     expect(dayOf(txn('p', null, 1, { pending: true }), TODAY)).toBe(TODAY);
-    // Its UTC day, as the history's: 8pm in Springfield on the 31st is already September.
+    // Its UTC day, as the history's: 8pm in San Diego on the 31st is already September.
     expect(dayOf(txn('t', null, 1, { posted_at: '2026-08-31T20:00:00-07:00' }), TODAY)).toBe(
       '2026-09-01',
     );
@@ -575,11 +575,11 @@ describe('a month', () => {
   it('converts euros at the rate the month’s last day had, once per currency', () => {
     const counted = new Map([
       ['card', 'USD'],
-      ['ejemplo', 'EUR'],
+      ['castellana', 'EUR'],
     ]);
     const euroRows = [
-      txn('e1', '2026-08-03', -1_000, { account_id: 'ejemplo', source_category: 'Groceries' }),
-      txn('e2', '2026-08-20', -1_000, { account_id: 'ejemplo', source_category: 'Groceries' }),
+      txn('e1', '2026-08-03', -1_000, { account_id: 'castellana', source_category: 'Groceries' }),
+      txn('e2', '2026-08-20', -1_000, { account_id: 'castellana', source_category: 'Groceries' }),
       txn('u1', '2026-08-21', -500, { source_category: 'Groceries' }),
     ];
     const rates = [rate('2026-08-01', '1.1'), rate('2026-08-29', '1.2'), rate('2026-09-10', '9')];
@@ -607,11 +607,11 @@ describe('a month', () => {
   });
 
   it('leaves a sum unsaid rather than short when a currency has no rate', () => {
-    const counted = new Map([['ejemplo', 'EUR']]);
+    const counted = new Map([['castellana', 'EUR']]);
     const euroRows = [
-      txn('e1', '2026-09-03', -1_000, { account_id: 'ejemplo', source_category: 'Groceries' }),
-      txn('e2', '2026-09-04', 5_000, { account_id: 'ejemplo', source_category: 'Paychecks' }),
-      txn('e3', '2026-09-05', -1, { account_id: 'ejemplo' }),
+      txn('e1', '2026-09-03', -1_000, { account_id: 'castellana', source_category: 'Groceries' }),
+      txn('e2', '2026-09-04', 5_000, { account_id: 'castellana', source_category: 'Paychecks' }),
+      txn('e3', '2026-09-05', -1, { account_id: 'castellana' }),
     ];
     const entries = entriesIn(
       '2026-09',

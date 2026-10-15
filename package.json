@@ -22,6 +22,7 @@
     "db:reset": "node --experimental-strip-types --no-warnings scripts/db/supabase.ts db reset",
     "db:new": "node --experimental-strip-types --no-warnings scripts/db/supabase.ts migration new",
     "db:orphans": "node --experimental-strip-types --no-warnings scripts/db/orphans.ts",
+    "db:demo": "node --experimental-strip-types --no-warnings scripts/db/demo.ts",
     "db:env": "node --experimental-strip-types --no-warnings scripts/db/local-env.ts",
     "db:verify": "node --experimental-strip-types --no-warnings scripts/db/verify-schema.ts",
     "db:verify:remote": "node --experimental-strip-types --no-warnings scripts/db/verify-schema.ts --remote",

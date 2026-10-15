@@ -530,7 +530,7 @@ export function readGoal(
 
 /**
  * A goal is in dollars unless every account it counts is in one other currency: a euro saving
- * for the Ejemplo account is a euro target, and anything mixed is summed in dollars, as net
+ * for the Castellana account is a euro target, and anything mixed is summed in dollars, as net
  * worth is.
  */
 export function currencyFor(accounts: readonly AccountRow[]): string {

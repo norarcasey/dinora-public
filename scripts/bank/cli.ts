@@ -29,6 +29,7 @@ import {
   report,
   windows,
 } from '../../packages/core/src/simplefin.ts';
+import { flag } from '../argv.ts';
 import { stack } from '../db/stack.ts';
 import { claimUrl, storeSql } from './simplefin.ts';
 
@@ -99,18 +100,17 @@ async function claim(): Promise<void> {
   console.log(`bank: claimed. The access URL is in ${file} (0600).`);
 }
 
-function flag(name: string): string | undefined {
-  const i = process.argv.indexOf(name);
-  return i === -1 ? undefined : process.argv[i + 1];
-}
-
 async function pullCommand(): Promise<void> {
   const demo = process.argv.includes('--demo');
-  const count = Number(flag('--windows') ?? '8');
+  const windowsFlag = flag(process.argv, '--windows');
+  if (!windowsFlag.ok) fail(windowsFlag.reason);
+  const count = Number(windowsFlag.value ?? '8');
   if (!Number.isInteger(count) || count < 1 || count > 12) {
     fail('--windows is 1 to 12, of the 24 requests a day the Bridge allows.');
   }
-  const email = flag('--email') ?? 'one@example.test';
+  const emailFlag = flag(process.argv, '--email');
+  if (!emailFlag.ok) fail(emailFlag.reason);
+  const email = emailFlag.value ?? 'one@example.test';
 
   const accessUrl = demo ? DEMO_ACCESS_URL : readAccessUrl();
   if (accessUrl === null) fail('no access URL. Claim a setup token first: pnpm bank:claim');

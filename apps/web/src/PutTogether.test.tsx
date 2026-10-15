@@ -71,7 +71,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe('PutTogether (BANK-17)', () => {
+describe('PutTogether', () => {
   it('says what will happen, naming both, before anything is sent', () => {
     const asked = server(() => new Response('{}', { status: 599 }));
     show();
